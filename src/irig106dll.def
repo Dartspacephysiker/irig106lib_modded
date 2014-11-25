@@ -1,0 +1,92 @@
+; irig106dll.def : Declares the module parameters for the DLL.
+
+LIBRARY      "Irig106"
+DESCRIPTION  'Irig106 - IRIG106 Data File Windows Dynamic Link Library'
+
+EXPORTS
+; irig106ch10
+    enI106Ch10Open
+    enI106Ch10Close
+    enI106Ch10ReadNextHeader
+    enI106Ch10ReadPrevHeader
+    enI106Ch10ReadData
+    enI106Ch10WriteMsg
+    enI106Ch10FirstMsg
+    enI106Ch10LastMsg
+    enI106Ch10SetPos
+    enI106Ch10GetPos
+    iHeaderInit
+    iGetHeaderLen
+    uGetDataLen
+    uCalcHeaderChecksum
+    uCalcSecHeaderChecksum
+;   bCalcDataChecksum
+    uCalcDataBuffReqSize
+    uAddDataFillerChecksum
+    vMakeInOrderIndex
+    bReadInOrderIndex
+    bWriteInOrderIndex
+
+; i106_time
+    enI106_SyncTime
+    enI106_SetRelTime
+    enI106_Rel2IrigTime
+    enI106_RelInt2IrigTime
+    enI106_Irig2RelTime
+    enI106_Ch4Binary2IrigTime
+    enI106_IEEE15882IrigTime
+    vFillInTimeStruct
+    vLLInt2TimeArray
+    vTimeArray2LLInt
+    enI106Ch10SetPosToIrigTime
+    IrigTime2String
+    mkgmtime
+
+; i106_decode_time
+    enI106_Decode_TimeF1
+    enI106_Encode_TimeF1
+
+; i106_decode_tmats
+    enI106_Decode_Tmats
+    enI106_Decode_Tmats_Text
+    enI106_Free_TmatsInfo
+    enI106_Encode_Tmats
+    enI106_Tmats_Signature
+
+; i106_index
+    enIndexPresent
+    enReadIndexes
+
+; i106_decode_1553f1
+    enI106_Decode_First1553F1
+    enI106_Decode_Next1553F1
+    i1553WordCnt
+
+; i106_decode_video
+    enI106_Decode_FirstVideoF0
+    enI106_Decode_NextVideoF0
+
+; i106_decode_ethernet
+    enI106_Decode_FirstEthernetF0
+    enI106_Decode_NextEthernetF0
+
+; i106_decode_arinc429
+    enI106_Decode_FirstArinc429F0
+    enI106_Decode_NextArinc429F0
+
+; i106_decode_pcmf1
+    enI106_Decode_FirstPcmF1
+    enI106_Decode_NextPcmF1 
+;    PcmF1FirstRun
+    DecodeMinorFrame_PcmF1
+;    Set_PcmF1_Attributes
+;    PcmCheckParity
+;    PrepareNewMinorFrameCollection
+;    GetNextBit
+;    IsSyncWordFound
+;    RenewSyncCounters
+    SwapBytes_PcmF1
+    
+; i106_decode_can
+    enI106_Decode_FirstCan
+    enI106_Decode_NextCan

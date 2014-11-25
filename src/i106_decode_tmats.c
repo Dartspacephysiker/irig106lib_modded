@@ -794,9 +794,29 @@ int bDecodeRLine(char * szCodeName, char * szDataItem, SuRRecord ** ppsuFirstRRe
         DECODE_R_DS(N, szAnalogChansPerPkt)     // ACH\N - Analog channels per packet
         } // end if ACH
 
-    DECODE_R_DS(ASR, szAnalogSampleRate)        // ASR-n - Analog sample rate
-    DECODE_R_DS(ADP, szAnalogDataPacking)       // ADP-n - Analog data packing
-
+    DECODE_R_DS(ATF, szAnalogDataTypeFormat)    // ATF-n - Analog Data Type Format
+    DECODE_R_DS_INT(ASR, szAnalogSampleRate, iAnalogSampleRate)          // ASR-n - Analog Sample Rate
+    DECODE_R_DS(ADP, szAnalogDataPacking)       // ADP-n - Analog Data Packing Option
+    DECODE_R_DS(AMN, szAnalogMeasurementNam)    // AMN-n - Analog Measurement Name
+    DECODE_R_DS_INT(ADL, szAnalogDataLength, iAnalogDataLength)          // ADL-n - Analog Data Length
+    DECODE_R_DS(AMSK, szAnalogBitMask)          // AMSK-n - Analog Bit Mask
+    DECODE_R_DS(AMTO, szAnalogMeasTransfOrd)    // AMTO-n - Analog Measurement Transfer Order
+    DECODE_R_DS_INT(ASF, szAnalogSampleFactor, iAnalogSampleFactor)      // ASF-n - Analog Sample Factor
+    DECODE_R_DS(ASBW, szAnalogSampleFilter)     // ASBW-n - Analog Sample Filter 3dB Bandwidth
+    DECODE_R_DS(ACP, szAnalogACDCCoupling)      // ACP-n - Analog AC/DC Coupling
+    DECODE_R_DS_INT(AII, szAnalogRecImpedance, iAnalogRecImpedance)      // AII-n - Analog Recorder Input Impedance
+    DECODE_R_DS_INT(AGI, szAnalogChanGain, iAnalogChanGain)              // AGI-n - Analog Input Channel Gain
+    DECODE_R_DS_INT(AFSI, szAnalogFullScaleRange, iAnalogFullScaleRange) // AFSI-n - Analog Input Full Scale Range
+    DECODE_R_DS_INT(AOVI, szAnalogOffsetVoltage, iAnalogOffsetVoltage)   // AOVI-n - Analog Input Offset Voltage
+    DECODE_R_DS(ALSV, szAnalogLSBValue)         // ALSV-n - Analog LSB Value
+    DECODE_R_DS(AECS, szAnalogEUCSlope)         // AECS-n - Analog EUC Slop
+    DECODE_R_DS(AECO, szAnalogEUCOffset)        // AECO-n - Analog EUC Offset
+    DECODE_R_DS(AECU, szAnalogEUCUnits)         // AECU-n - Analog EUC Units
+    DECODE_R_DS(AF, szAnalogFormat)             // AF-n - Analog Format
+    DECODE_R_DS(AIT, szAnalogInputType)         // AIT-n - Analog Input Type
+    DECODE_R_DS(AV, szAnalogAudio)              // AV-n - Analog Audio
+    DECODE_R_DS(AVF, szAnalogAudioFormat)       // AVF-n - Analog Audio Format
+      
     return 0;
     }
 

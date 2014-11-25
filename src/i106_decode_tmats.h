@@ -210,6 +210,7 @@ typedef PUBLIC struct SuMRecord_S
 //    char                      * szRecordNum;            // M-x
     char                      * szDataSourceID;         // M-x\ID
     char                      * szBBDataLinkName;       // M-x\BB\DLN
+    char                      * szBBMeasurementName;    // M-x\BB\DLN
     char                      * szBasebandSignalType;   // M-x\BSG1
     struct SuPRecord_S        * psuPRecord;             // Corresponding P record
     struct SuBRecord_S        * psuBRecord;             // Corresponding B record
@@ -228,6 +229,7 @@ typedef PUBLIC struct SuRDataSource_S
     char                      * szChannelDataType;      // R-x\CDT-n
     char                      * szTrackNumber;          // R-x\TK1-n
     int                         iTrackNumber;           // Only valid if szTrackNumber != NULL
+    char                      * szPhysicalChanNumber;   // R-x\TK4-n-m                                                    
     char                      * szEnabled;              // R-x\CHE-n
     int                         bEnabled;               // Only valid if szEnabled != NULL
     char                      * szPcmDataLinkName;      // R-x\PDLN-n (-04, -05)
@@ -250,10 +252,38 @@ typedef PUBLIC struct SuRDataSource_S
     char                      * szPcmInputTermination;  // (R-x\ITM-n)
     char                      * szPcmVideoTypeFormat;   // (R-x\PTF-n)
     // Analog channel attributes
-    char                      * szAnalogChansPerPkt;    // (R-1\ACH\N-n)
-    char                      * szAnalogSampleRate;     // (R-1\ASR-n)
-    char                      * szAnalogDataPacking;    // (R-1\ADP-n)
-
+    char                      * szAnalogDataTypeFormat; // (R-x\ATF-n)
+    char                      * szAnalogChansPerPkt;    // (R-1\ACH\N-n) //ORIG
+    char                      * szAnalogSampleRate;     // (R-1\ASR-n)   //ORIG
+    int                         iAnalogSampleRate;   
+    char                      * szAnalogDataPacking;    // (R-1\ADP-n)   //ORIG
+    char                      * szAnalogMeasurementNam; // (R-x\AMN-n-m)
+    char                      * szAnalogDataLength;     // (R-x\ADL-n-m)
+    int                         iAnalogDataLength;
+    char                      * szAnalogBitMask;        // (R-x\AMSK-n-m)
+    char                      * szAnalogMeasTransfOrd;  // (R-x\AMTO-n-m)
+    char                      * szAnalogSampleFactor;   // (R-x\ASF-n-m)
+    int                         iAnalogSampleFactor;
+    char                      * szAnalogSampleFilter;   // (R-x\ASBW-n-m)
+    char                      * szAnalogACDCCoupling;   // (R-x\ACP-n-m)
+    char                      * szAnalogRecImpedance;   // (R-x\AII-n-m)
+    int                         iAnalogRecImpedance;
+    char                      * szAnalogChanGain;       // (R-x\AGI-n-m)
+    int                         iAnalogChanGain;
+    char                      * szAnalogFullScaleRange; // (R-x\AFSI-n-m)
+    int                         iAnalogFullScaleRange;
+    char                      * szAnalogOffsetVoltage;  // (R-x\AOVI-n-m)
+    int                         iAnalogOffsetVoltage;
+    char                      * szAnalogLSBValue;       // (R-x\ALSV-n-m)
+    char                      * szAnalogEUCSlope;       // (R-x\AECS-n-m)
+    char                      * szAnalogEUCOffset;      // (R-x\AECO-n-m)
+    char                      * szAnalogEUCUnits;       // (R-x\AECU-n-m)
+    char                      * szAnalogFormat;         // (R-x\AF-n-m)
+    char                      * szAnalogInputType;      // (R-x\AIT-n-m)
+    char                      * szAnalogAudio;          // (R-x\AV-n-m)
+      //    int                         bAnalogAudio;
+    char                      * szAnalogAudioFormat;    // (R-x\AVF-n-m)                                                          
+      
     struct SuMRecord_S        * psuMRecord;             // Corresponding M record
     struct SuPRecord_S        * psuPRecord;             // Corresponding P record
     struct SuRDataSource_S    * psuNextRDataSource;

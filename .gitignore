@@ -1,2 +1,5 @@
 #No emacs temp files
 *~
+
+#No object files
+*.o

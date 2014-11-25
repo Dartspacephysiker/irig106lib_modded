@@ -99,29 +99,46 @@ typedef PUBLIC struct AnalogF1_ChanSpec_S
 typedef struct AnalogF1_Attributes_S
     {
     SuRDataSource * psuRDataSrc;            // Pointer to the corresponding RDataSource
-    int         iRecordNum;                 // P-x
-    /* //          szDataLinkName;             // P-x\DLN */
-    /* //          szPcmCode;                  // P-x\D1 */
-    /* uint32_t    ulBitsPerSec;               // P-x\D2 number of bits per seconds */
-    /* //          szPolarity                  // P-x\D4 */
-    /* //          szTypeFormat                // P-x\TF */
+    int             iRecordNum;             // R-x
 
-    /* // Fx */
+    char          * szDataSourceID;         //
 
-    /* uint32_t    ulWordTransferOrder;        // Msb (0)/ LSB (1, unsupported) P-x\F2 */
-    /* uint32_t    ulParityType;               // Parity (0=none, 1= odd, 2= even) P-x\F3 */
-    /* uint32_t    ulParityTransferOrder;      // Trailing (0) Leading (1) P-x\F4 */
+    int             iTrackNumber;           // Only valid if szTrackNumber != NULL
+    int             iPhysicalChanNumber;
+    int             bEnabled;               // Only valid if szEnabled != NULL
+    char          * szBusDataLinkName;      // R-x\BDLN-n (-04, -05)
+    char          * szChanDataLinkName;     // R-x\CDLN-n (-07, -09)
+    int             iAnalogDataTypeFormat;  // (R-x\ATF-n)
+    int             iAnalogChansPerPkt;     // (R-1\ACH\N-n) //ORIG
+    uint64_t        ullAnalogSampleRate;    // (R-1\ASR-n)   //ORIG
 
-    
+    uint32_t        bIsAnalogDataPacked;    // (R-1\ADP-n)   //ORIG
+    char          * szAnalogMeasurementNam; // (R-x\AMN-n-m)
+    uint32_t        ulAnalogDataLength;     // (R-x\ADL-n-m)
+    char          * szAnalogBitMask;        // (R-x\AMSK-n-m)
+    char          * szAnalogMeasTransfOrd;  // (R-x\AMTO-n-m)
+    uint32_t        ulAnalogSampleFactor;   // (R-x\ASF-n-m)
+    uint64_t        ullAnalogSampleFilter;  // (R-x\ASBW-n-m)
+    uint32_t        bIsAnalogDCCoupled;     // (R-x\ACP-n-m)
+    uint32_t        ulAnalogRecImpedance;   // (R-x\AII-n-m)
+    int32_t         lAnalogChanGain;        // (R-x\AGI-n-m)
+    uint32_t        ulAnalogFullScaleRange; // (R-x\AFSI-n-m)
+    int32_t         lAnalogOffsetVoltage;   // (R-x\AOVI-n-m)
+    int32_t         lAnalogLSBValue;        // (R-x\ALSV-n-m)
+    char          * szAnalogEUCSlope;       // (R-x\AECS-n-m)
+    char          * szAnalogEUCOffset;      // (R-x\AECO-n-m)
+    char          * szAnalogEUCUnits;       // (R-x\AECU-n-m)
+    char          * szAnalogFormat;         // (R-x\AF-n-m)
+    char          * szAnalogInputType;      // (R-x\AIT-n-m)
+    uint32_t        bIsAnalogAudio;         // (R-x\AV-n-m)
+    uint32_t        ulAnalogAudioFormat;    // (R-x\AVF-n-m)      
+      
 
-    // Needed for some strange Pcm sources
+      // Needed for some strange Pcm sources
     uint32_t    bDontSwapRawData;           // Inhibit byte or word swap on the raw input data
 
     // Computed values 
-    uint64_t    ullMinorFrameSyncMask;      // Computed from P-x\MF4 (ulMinorFrameSyncPatLen)
-    uint64_t    ullCommonWordMask;          // Computed from P-x\F1
-                                                
-    double      dDelta100NanoSeconds;       // Computed from P-x\D2, the bits per sec
+
     int32_t     bPrepareNextDecodingRun;            // First bit flag for a complete decoding run: preload a minor frame sync word to the test word
 
     // The output buffer must be allocated if bPrepareNextDecodingRun is notzero
@@ -153,10 +170,10 @@ typedef struct AnalogF1_Attributes_S
 #endif
 
 
-// Current Analog message
+// Current Analog message (I don't remember when/if I ripped this off PCM stuff)
 typedef struct
     {
-        SuI106Ch10Header    * psuHeader;        // The overall packet header
+        SuI106Ch10Header       * psuHeader;        // The overall packet header
         SuAnalogF1_ChanSpec    * psuChanSpec;      // Header in the data stream
         SuAnalogF1_Attributes  * psuAttributes;    // Pointer to the Pcm Format structure, values must be imported from TMATS 
                                                 // or another source

@@ -164,9 +164,6 @@ EnI106Status I106_CALL_DECL
         if (psuMsg->ulDataLen <= psuMsg->uBytesRead)
             return I106_NO_MORE_DATA;
 
-        // Compute the padded framelen for the minor frame
-        ulSubPacketLen = psuMsg->psuAttributes->ulBitsInMinorFrame;
-
         if( ! psuMsg->psuChanSpec->bAlignment) // 16 bit alignement
         {
             uRemainder = ulSubPacketLen & 0xf; // %16
@@ -333,111 +330,93 @@ EnI106Status I106_CALL_DECL
 EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc, SuAnalogF1_Attributes * psuAnalogF1_Attributes)
 {
 
-    SuPRecord           * psuPRecord;
+    SuRRecord           * psuRRecord;
     uint32_t            uBitCount;
 
     if(psuAnalogF1_Attributes == NULL) return I106_INVALID_PARAMETER; // Set Attributes
 
     memset(psuAnalogF1_Attributes, 0, sizeof(SuAnalogF1_Attributes));
-    psuPRecord = psuRDataSrc->psuPRecord;
+    psuRRecord = psuRDataSrc->psuRRecord;
 
-    if(psuPRecord == NULL) return I106_INVALID_PARAMETER; // Set Attributes
+    if(psuRRecord == NULL) return I106_INVALID_PARAMETER; // Set Attributes
 
     // Collect the TMATS values
     // ------------------------
     // Essential values for throughput mode are: 
-    //      szBitsPerSec / ulBitsPerSec // P-x\D2
-    //      szCommonWordLen / ulCommonWordLen // P-x\F1
-    //      szWordsInMinorFrame / ulWordsInMinorFrame // P-x\MF1
-    //      szBitsInMinorFrame / ulBitsInMinorFrame // P-x\MF2
-    //          if not existent, it is calculated from  ulCommonWordLen * (ulWordsInMinorFrame - 1) + ulMinorFrameSyncPatLen;
-    //          Note: May be over-determined, no check for this
-    //      szMinorFrameSyncPatLen / ulMinorFrameSyncPatLen // P-x\MF4
-    //          if not existent, it is calculated from the number of bits in ulMinorFrameSyncPat
-    //          Note: May be over-determined, no check for this
-    //      szMinorFrameSyncPat / ulMinorFrameSyncPa) // P-x\MF5
-
-    // Default values for throughput are taken for  
-    //      szWordTransferOrder: "M" P-x\F2
-    //      szParityType: "NO" P-x\F3
-    //      szParityTransferOrder not "L" P-x/F4
-    //      szMinorFrameSyncType P-x\MF3: "FPT"
-    // Unneeded values for throughput are
-
-    //      iRecordNum / iRecordNum // P-x
-    //      szNumMinorFrames / ulNumMinorFrames  P-x\MF\N
+    //      ...We have no 'throughput mode' for analog data!
+    
 
     psuAnalogF1_Attributes->psuRDataSrc                = psuRDataSrc; // May be, we need it in the future
 
-    psuAnalogF1_Attributes->iRecordNum                 = psuPRecord->iRecordNum; // P-x
+    psuAnalogF1_Attributes->iRecordNum                 = psuRRecord->iRecordNum; // R-x
 
-    if(psuPRecord->szBitsPerSec != NULL)
-        psuAnalogF1_Attributes->ulBitsPerSec           = atol(psuPRecord->szBitsPerSec); // P-x\D2
-    if(psuPRecord->szCommonWordLen != NULL)
-        psuAnalogF1_Attributes->ulCommonWordLen        = atol(psuPRecord->szCommonWordLen); // P-x\F1
+    if(psuRRecord->szBitsPerSec != NULL)
+        psuAnalogF1_Attributes->ulBitsPerSec           = atol(psuRRecord->szBitsPerSec); // P-x\D2
+    if(psuRRecord->szCommonWordLen != NULL)
+        psuAnalogF1_Attributes->ulCommonWordLen        = atol(psuRRecord->szCommonWordLen); // P-x\F1
 
-    if(psuPRecord->szWordTransferOrder != NULL)    // P-x\F2 most significant bit "M", least significant bit "L". default: M
+    if(psuRRecord->szWordTransferOrder != NULL)    // P-x\F2 most significant bit "M", least significant bit "L". default: M
     {
         /*
         Measurement Transfer Order. Which bit is being transferred first is specified as – Most Significant Bit (M), 
         Least Significant Bit (L), or Default (D). The default is specified in the P-Group - (P-x\F2:M).
         D-1\MN3-1-1:M;
         */
-        if(psuPRecord->szWordTransferOrder[0] == 'L')
+        if(psuRRecord->szWordTransferOrder[0] == 'L')
         {
             psuAnalogF1_Attributes->ulWordTransferOrder = ANALOG_LSB_FIRST;
             return(I106_UNSUPPORTED);
         }
     }
-    if(psuPRecord->szParityType != NULL)  // P-x/F3
+    if(psuRRecord->szParityType != NULL)  // P-x/F3
     {
         //even "EV", odd "OD", or none "NO", default: none
-        if (strncasecmp(psuPRecord->szParityType, "EV", 2) == 0) 
+        if (strncasecmp(psuRRecord->szParityType, "EV", 2) == 0) 
             psuAnalogF1_Attributes->ulParityType = ANALOG_PARITY_EVEN;
-        else if (strncasecmp(psuPRecord->szParityType, "OD", 2) == 0) 
+        else if (strncasecmp(psuRRecord->szParityType, "OD", 2) == 0) 
             psuAnalogF1_Attributes->ulParityType = ANALOG_PARITY_EVEN; 
         else
             psuAnalogF1_Attributes->ulParityType = ANALOG_PARITY_NONE;
     }
-    if(psuPRecord->szParityTransferOrder != NULL)
+    if(psuRRecord->szParityTransferOrder != NULL)
     {
-        if (strncasecmp(psuPRecord->szParityType, "L", 1) == 0)    // P-x/F4
+        if (strncasecmp(psuRRecord->szParityType, "L", 1) == 0)    // P-x/F4
             psuAnalogF1_Attributes->ulParityTransferOrder = 1;
         else
             psuAnalogF1_Attributes->ulParityTransferOrder = 0;
     }
-    if(psuPRecord->szNumMinorFrames != NULL)
-        psuAnalogF1_Attributes->ulNumMinorFrames       = atol(psuPRecord->szNumMinorFrames); // P-x\MF\N
+    if(psuRRecord->szNumMinorFrames != NULL)
+        psuAnalogF1_Attributes->ulNumMinorFrames       = atol(psuRRecord->szNumMinorFrames); // P-x\MF\N
 
-    if(psuPRecord->szWordsInMinorFrame != NULL)
-        psuAnalogF1_Attributes->ulWordsInMinorFrame    = atol(psuPRecord->szWordsInMinorFrame); // P-x\MF1
+    if(psuRRecord->szWordsInMinorFrame != NULL)
+        psuAnalogF1_Attributes->ulWordsInMinorFrame    = atol(psuRRecord->szWordsInMinorFrame); // P-x\MF1
 
-    if(psuPRecord->szBitsInMinorFrame != NULL)
-        psuAnalogF1_Attributes->ulBitsInMinorFrame     = atol(psuPRecord->szBitsInMinorFrame); // P-x\MF2
+    if(psuRRecord->szBitsInMinorFrame != NULL)
+        psuAnalogF1_Attributes->ulBitsInMinorFrame     = atol(psuRRecord->szBitsInMinorFrame); // P-x\MF2
 
-    if(psuPRecord->szMinorFrameSyncType != NULL)
+    if(psuRRecord->szMinorFrameSyncType != NULL)
     {
         // if not "FPT" : Error
-        if (strncasecmp(psuPRecord->szMinorFrameSyncType, "FPT", 3) != 0) // P-x\MF3
+        if (strncasecmp(psuRRecord->szMinorFrameSyncType, "FPT", 3) != 0) // P-x\MF3
             return(I106_UNSUPPORTED);
         psuAnalogF1_Attributes->ulMinorFrameSyncType = 0;
     }
 
-    if(psuPRecord->szMinorFrameSyncPatLen != NULL)
-        psuAnalogF1_Attributes->ulMinorFrameSyncPatLen = atol(psuPRecord->szMinorFrameSyncPatLen); // P-x\MF4
+    if(psuRRecord->szMinorFrameSyncPatLen != NULL)
+        psuAnalogF1_Attributes->ulMinorFrameSyncPatLen = atol(psuRRecord->szMinorFrameSyncPatLen); // P-x\MF4
 
-    if(psuPRecord->szInSyncCrit != NULL)
+    if(psuRRecord->szInSyncCrit != NULL)
     {
         // to declare that the system is in sync – First good sync (0), Check (1 or greater), or Not specified (NS).
         psuAnalogF1_Attributes->ulMinSyncs = 0; // Minimal number of syncs P-x\SYNC1;
     }
         
-    if(psuPRecord->szMinorFrameSyncPat != NULL) // P-x\MF5
+    if(psuRRecord->szMinorFrameSyncPat != NULL) // P-x\MF5
     {
         uint64_t ullSyncPat = 0;
         uint64_t ullSyncMask = 0;
         uint32_t ulMinorFrameSyncPatLen = 0;
-        char *pChar = psuPRecord->szMinorFrameSyncPat;
+        char *pChar = psuRRecord->szMinorFrameSyncPat;
         //Example: 0xFE6B2840
         //static char *xx = "11111110011010110010100001000000";
         //pChar = xx;

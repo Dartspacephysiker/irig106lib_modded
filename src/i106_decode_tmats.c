@@ -799,11 +799,11 @@ int bDecodeRLine(char * szCodeName, char * szDataItem, SuRRecord ** ppsuFirstRRe
     DECODE_R_DS(ADP, szAnalogIsDataPacked)       // ADP-n - Analog Data Packing Option
     DECODE_R_DS(AMN, szAnalogMeasurementNam)    // AMN-n - Analog Measurement Name
     DECODE_R_DS_INT(ADL, szAnalogDataLength, iAnalogDataLength)          // ADL-n - Analog Data Length
-    DECODE_R_DS(AMSK, szAnalogBitMask)          // AMSK-n - Analog Bit Mask
+    DECODE_R_DS(AMSK, szAnalogBitMask)          // AMSK-n - Analog Bit Mask; "FW" = full word
     DECODE_R_DS(AMTO, szAnalogMeasTransfOrd)    // AMTO-n - Analog Measurement Transfer Order
     DECODE_R_DS_INT(ASF, szAnalogSampleFactor, iAnalogSampleFactor)      // ASF-n - Analog Sample Factor
     DECODE_R_DS(ASBW, szAnalogSampleFilter)     // ASBW-n - Analog Sample Filter 3dB Bandwidth
-    DECODE_R_DS(ACP, szAnalogIsDCCoupled)      // ACP-n - Analog AC/DC Coupling
+      DECODE_R_DS_BOOL(ACP, szAnalogIsDCCoupled, bAnalogIsDCCoupled, 'D')// ACP-n - Analog AC/DC Coupling
     DECODE_R_DS_INT(AII, szAnalogRecImpedance, iAnalogRecImpedance)      // AII-n - Analog Recorder Input Impedance
     DECODE_R_DS_INT(AGI, szAnalogChanGain, iAnalogChanGain)              // AGI-n - Analog Input Channel Gain
     DECODE_R_DS_INT(AFSI, szAnalogFullScaleRange, iAnalogFullScaleRange) // AFSI-n - Analog Input Full Scale Range
@@ -813,8 +813,8 @@ int bDecodeRLine(char * szCodeName, char * szDataItem, SuRRecord ** ppsuFirstRRe
     DECODE_R_DS(AECO, szAnalogEUCOffset)        // AECO-n - Analog EUC Offset
     DECODE_R_DS(AECU, szAnalogEUCUnits)         // AECU-n - Analog EUC Units
     DECODE_R_DS(AF, szAnalogFormat)             // AF-n - Analog Format
-    DECODE_R_DS(AIT, szAnalogInputType)         // AIT-n - Analog Input Type
-    DECODE_R_DS(AV, szAnalogIsAudio)              // AV-n - Analog Audio
+      DECODE_R_DS_BOOL(AIT, szAnalogDifferentialInp, bAnalogDifferentialInp, 'D')// AIT-n - Analog Input Type
+      DECODE_R_DS_BOOL(AV, szAnalogIsAudio, bAnalogIsAudio, 'Y')         // AV-n - Analog Audio
     DECODE_R_DS(AVF, szAnalogAudioFormat)       // AVF-n - Analog Audio Format
       
     return 0;

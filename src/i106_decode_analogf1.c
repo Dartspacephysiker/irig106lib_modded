@@ -66,6 +66,16 @@ namespace Irig106 {
  * ----------------------
  */
 
+typedef enum
+{
+  ANALOG_FMT_ONES          = 0,
+  ANALOG_FMT_TWOS          = 1,
+  ANALOG_FMT_SIGNMAG_0     = 2,
+  ANALOG_FMT_SIGNMAG_1     = 3,
+  ANALOG_FMT_OFFSET_BIN    = 4,
+  ANALOG_FMT_UNSIGNED_BIN  = 5,
+  ANALOG_FMT_SINGLE_FLOAT  = 6,
+} ANALOG_FORMAT;   // R-x\AF-n-m
 
 /*
  * Data structures
@@ -94,20 +104,8 @@ namespace Irig106 {
 
 // Local functions
 EnI106Status PrepareNextDecodingRun_AnalogF1(SuAnalogF1_CurrMsg * psuMsg);
-void PrepareNewMinorFrameCollection_AnalogF1(SuAnalogF1_Attributes * psuAttributes);
-void GetNextBit_AnalogF1(SuAnalogF1_CurrMsg * psuMsg, SuAnalogF1_Attributes * psuAttributes);
-int IsSyncWordFound_AnalogF1(SuAnalogF1_Attributes * psuAttributes);
-void RenewSyncCounters_AnalogF1(SuAnalogF1_Attributes * psuAttributes, uint64_t ullSyncCount);
-
-
 
 /* ======================================================================= */
-
-// Note; This code is tested only with Analog in throughput mode
-
-/* ----------------------------------------------------------------------- */
-
-
 
 /* ----------------------------------------------------------------------- */
 
@@ -138,9 +136,6 @@ EnI106Status I106_CALL_DECL
     // Save the time from the packet header
     //    vTimeArray2LLInt(psuHeader->aubyRefTime, &(psuMsg->llBaseIntPktTime));
 
-    // Take the whole remaining data buffer as packet len
-    psuMsg->ulSubPacketLen = psuMsg->ulDataLen - psuMsg->uBytesRead;
-
     // ------------------------------------
 
     //This was used to check for remaining data based on subpacket--do we need to do anything
@@ -150,14 +145,6 @@ EnI106Status I106_CALL_DECL
 
     // Set the pointer to the Analog message data
     psuMsg->pauData = (uint8_t *)((char *)(psuMsg->psuChanSpec) + psuMsg->uBytesRead);
-
-    //what is all this?
-    //for(int count= 0; count < 128; count++)
-    //  TRACE(" %2.2X", psuMsg->pauData[count]);
-    //TRACE("\n");
-
-    //why are we saying we've read the data? All we did was set the pointer...
-    psuMsg->uBytesRead += psuMsg->ulSubPacketLen;
 
     // Prepare the Analog buffers and load the first bits
     if(psuMsg->psuAttributes->bPrepareNextDecodingRun)
@@ -169,96 +156,20 @@ EnI106Status I106_CALL_DECL
             return enStatus;
     }
 
-    if( ! psuMsg->psuChanSpec->bThruMode)
-    {
-        // Intra-packet not tested, so return
-        return I106_UNSUPPORTED;
-    }
+    // Now start the decode of this buffer
+    psuMsg->psuAttributes->ulBitPosition = 0;
 
-    if(psuMsg->psuChanSpec->bThruMode)
-    {
-
-        #ifdef DEBUG_OTHER_ANALOG_FILE
-        int nBytes;
-        if(FileAnalogTest == NULL)
-            return I106_NO_MORE_DATA;
-        // Note: skip the datarec3 header, otherwise we will have about 45 sync errore
-        fread(psuMsg->pauData, 1, 6, FileAnalogTest); // skip the datarec3 header
-        nBytes = fread(psuMsg->pauData, 1, psuMsg->ulSubPacketLen, FileAnalogTest);
-        //TRACE("nBytes %d, SubPacketLen %d, filepos %d\n",nBytes, psuMsg->ulSubPacketLen, ftell(FileAnalogTest));
-        //Sleep(200);
-        if(nBytes < (int32_t)psuMsg->ulSubPacketLen)
-        {
-            fclose(FileAnalogTest);
-            FileAnalogTest = NULL;
-            return I106_NO_MORE_DATA;
-        }
-        #endif
-
-        if( ! psuMsg->psuAttributes->bDontSwapRawData)
-        {
-            if(SwapBytes_AnalogF1(psuMsg->pauData, psuMsg->ulSubPacketLen))
-                return(I106_INVALID_DATA); 
-            // Note: Untested 
-            if(psuMsg->psuChanSpec->bAlignment)
-            {
-                if(SwapShortWords_AnalogF1((uint16_t *)psuMsg->pauData, psuMsg->ulSubPacketLen))
-                return(I106_INVALID_DATA); 
-            }
-        }
-
-        // Now start the decode of this buffer
-        psuMsg->psuAttributes->ulBitPosition = 0;
-
-        return (DecodeMinorFrame_AnalogF1(psuMsg));
-    }
-
-    return I106_OK;
+    return (DecodeBuff_AnalogF1(psuMsg));
 }
 
 
 /* ----------------------------------------------------------------------- */
 
+//SPENCE CHECK--Maybe this function is useless now...
 EnI106Status I106_CALL_DECL 
     enI106_Decode_NextAnalogF1(SuAnalogF1_CurrMsg * psuMsg)
 {
-
-    if(psuMsg->psuChanSpec->bThruMode)
-    {
-        return (DecodeMinorFrame_AnalogF1(psuMsg));
-    }
-
-    // Check for no (more) data
-    if (psuMsg->ulDataLen < psuMsg->uBytesRead)
-        return I106_NO_MORE_DATA;
-    
-    // If not thru mode, we must have an intrapacket header
-    // NOTE: UNTESTED
-    // May be, it points to outside ...
-    psuMsg->psuIntraPktHdr = (SuAnalogF1_IntraPktHeader *) ((char *)(psuMsg->psuChanSpec) + psuMsg->uBytesRead);
-    psuMsg->uBytesRead += sizeof(SuAnalogF1_IntraPktHeader);
-    // ... so check, if it was successful
-    if (psuMsg->ulDataLen <= psuMsg->uBytesRead)
-        return I106_NO_MORE_DATA;
-            
-    // TODO: Check time stamp, alignment, compute the the sub packet len etc
-            
-    // Fetch the time from the intra packet header
-    vFillInTimeStruct(psuMsg->psuHeader, (SuIntraPacketTS *)psuMsg->psuIntraPktHdr, &psuMsg->suTimeRef);
-    // and publish it   
-    psuMsg->llIntPktTime = psuMsg->suTimeRef.uRelTime;
-
-  // Check for no more data (including the length of the minor frame)
-  if(psuMsg->ulDataLen < psuMsg->uBytesRead + psuMsg->ulSubPacketLen)
-      return I106_NO_MORE_DATA;
-        
-  // Set the pointer to the Analog message data
-  psuMsg->pauData = (uint8_t *)((char *)(psuMsg->psuChanSpec) + psuMsg->uBytesRead);
-
-  psuMsg->uBytesRead += psuMsg->ulSubPacketLen;
-
-  return I106_OK;
-
+  return (DecodeBuff_AnalogF1(psuMsg));
 }
 
 /* ----------------------------------------------------------------------- */
@@ -307,32 +218,10 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
     if(psuRDataSrc->szAnalogDataLength != NULL)
        psuAnalogF1_Attributes->ulAnalogDataLength = strtoul(psuRDataSrc->szAnalogDataLength, NULL, 10);
 
-    //Get Recorder Input Impedance
-    if(psuRDataSrc->szAnalogRecImpedance != NULL)
-       psuAnalogF1_Attributes->ulAnalogRecImpedance = strtoul(psuRDataSrc->szAnalogRecImpedance, NULL, 10);
-
-    //Get Channel Gain
-    if(psuRDataSrc->szAnalogChanGain != NULL)
-       psuAnalogF1_Attributes->lAnalogChanGain = strtoul(psuRDataSrc->szAnalogChanGain, NULL, 10);
-
-    //Get Full-Scale Range
-    if(psuRDataSrc->szAnalogFullScaleRange != NULL)
-       psuAnalogF1_Attributes->ulAnalogFullScaleRange = strtoul(psuRDataSrc->szAnalogFullScaleRange, NULL, 10);
-
-    //Get Offset Voltage
-    if(psuRDataSrc->szAnalogOffsetVoltage != NULL)
-       psuAnalogF1_Attributes->lAnalogOffsetVoltage = strtoul(psuRDataSrc->szAnalogOffsetVoltage, NULL, 10);
-
-    //Get LSB Value
-    if(psuRDataSrc->szAnalogLSBValue != NULL)
-       psuAnalogF1_Attributes->lAnalogLSBValue = strtoul(psuRDataSrc->szAnalogLSBValue, NULL, 10);
-
-    //
     if(psuRDataSrc->szAnalogMeasTransferOrder != NULL)    // R-x\AMTO-n-m most significant bit "M", least significant bit "L". default: M
     {
-        /*
-        Measurement Transfer Order. Which bit is being transferred first is specified as – Most Significant Bit (M), 
-        Least Significant Bit (L), or Default (D). The default is specified in the P-Group - (P-x\F2:M).
+        /* Measurement Transfer Order. Which bit is being transferred first is specified as – Most Significant Bit (M), 
+        Least Significant Bit (L), or Default (D).
         D-1\MN3-1-1:M;
         */
         if(psuRDataSrc->szMeasTransferOrder[0] == 'L')
@@ -341,7 +230,54 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
             return(I106_UNSUPPORTED);
         }
     }
-        
+
+    //Get Sample Filter 3dB Bandwidth (in Hz)
+    if(psuRDataSrc->szAnalogSampleFilter != NULL)
+       psuAnalogF1_Attributes->ullAnalogSampleFilter = strtoull(psuRDataSrc->szAnalogSampleFilter, NULL, 10);
+
+    //Get whether AC/DC Coupling
+    if(psuRDataSrc->szAnalogIsDCCoupled != NULL)
+      psuAnalogF1_Attributes->bAnalogIsDCCoupled = psuRDataSrc->bAnalogIsDCCoupled;
+
+    //Get Recorder Input Impedance 
+    if(psuRDataSrc->szAnalogRecImpedance != NULL)
+       psuAnalogF1_Attributes->ulAnalogRecImpedance = strtoul(psuRDataSrc->szAnalogRecImpedance, NULL, 10);
+
+    //Get Channel Gain in milli units (10x = 010000)
+    if(psuRDataSrc->szAnalogChanGain != NULL)
+       psuAnalogF1_Attributes->ulAnalogChanGain = strtoul(psuRDataSrc->szAnalogChanGain, NULL, 10);
+
+    //Get Full-Scale Range (in milliVolts)
+    if(psuRDataSrc->szAnalogFullScaleRange != NULL)
+       psuAnalogF1_Attributes->ulAnalogFullScaleRange = strtoul(psuRDataSrc->szAnalogFullScaleRange, NULL, 10);
+
+    //Get Offset Voltage (in milliVolts)
+    if(psuRDataSrc->szAnalogOffsetVoltage != NULL)
+       psuAnalogF1_Attributes->lAnalogOffsetVoltage = strtoul(psuRDataSrc->szAnalogOffsetVoltage, NULL, 10);
+
+    //Get LSB Value
+    if(psuRDataSrc->szAnalogLSBValue != NULL)
+       psuAnalogF1_Attributes->lAnalogLSBValue = strtoul(psuRDataSrc->szAnalogLSBValue, NULL, 10);
+
+    //Get Analog Format 
+    //"1" = One's comp. 
+    //"2" = Two's comp.
+    //"3" = Sign and magnitude binary [+=0]
+    //"4" = Sign and magnitude binary [+=1]
+    //"B" = Offset binary
+    //"U" = Unsigned binary
+    //"F" = IEEE 754 single-precision [IEEE 32] floating point
+    if(psuRDataSrc->szAnalogFormat != NULL)
+       psuAnalogF1_Attributes->ulAnalogFormat = psuRDataSrc->szAnalogFormat;
+
+    //Get analog input type; 'D' = differential, 'S' = single-ended
+    if(psuRDataSrc->szAnalogDifferentialInp != NULL)
+       psuAnalogF1_Attributes->bAnalogDifferentialInp = psuRDataSrc->bAnalogDifferentialInp;
+ 
+    //Get whether audio
+    if(psuRDataSrc->szAnalogIsAudio != NULL)
+       psuAnalogF1_Attributes->bAnalogIsAudio = psuRDataSrc->bAnalogIsAudio;
+
     // Some post processing
     /* if(psuAnalogF1_Attributes->ulBitsInMinorFrame == 0) */
     /* { */
@@ -432,6 +368,7 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
 /* ----------------------------------------------------------------------- */
 
 // Create the output buffers for a minor frame (data and error flags)
+//SPENCE CHECK--THIS SHOULD WORK FINE
 EnI106Status I106_CALL_DECL 
     CreateOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes)
 {
@@ -476,6 +413,7 @@ EnI106Status I106_CALL_DECL FreeOutputBuffers_AnalogF1(SuAnalogF1_Attributes * p
 
 // Prepare a new decoding run 
 // Creates the output buffers and resets values and counters
+//SPENCE CHECK--Might need some edits to remove PCM stuff, but should be OK
 EnI106Status PrepareNextDecodingRun_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
 {
     SuAnalogF1_Attributes * psuAttributes = psuMsg->psuAttributes;
@@ -486,11 +424,6 @@ EnI106Status PrepareNextDecodingRun_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
 
     psuAttributes->bPrepareNextDecodingRun = 0;
     
-    // If not throughput mode, the work is done 
-    // ----------------------------------------
-    if( ! psuMsg->psuChanSpec->bThruMode)
-        return I106_OK;
-
     // Prepare the variables for bit decoding in throughput mode
     // --------------------------------------------------------
     psuAttributes->ullSyncCount = -1; // -1 sets all bits to 1
@@ -499,14 +432,109 @@ EnI106Status PrepareNextDecodingRun_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
     psuAttributes->ulBitPosition = 0; 
     psuAttributes->ullBitsLoaded = 0;
     // Nearly the same as in RenewSyncCounter...
-    psuAttributes->ulMinorFrameBitCount = 0;
-    psuAttributes->ulMinorFrameWordCount = 0;
     psuAttributes->ulDataWordBitCount = 0;
     psuAttributes->lSaveData = 0;
 
     return I106_OK;
 
 } // End PrepareNextDecodingRun
+
+/* ----------------------------------------------------------------------- */
+
+EnI106Status I106_CALL_DECL 
+    DecodeBuff_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
+{
+
+    SuPcmF1_Attributes * psuAttributes = psuMsg->psuAttributes;
+
+    while(psuAttributes->ulBitPosition < psuMsg->ulSubPacketBits)
+    {
+
+        GetNextBit_PcmF1(psuMsg, psuAttributes);
+
+        // Check for a sync word
+
+        if(IsSyncWordFound_PcmF1(psuAttributes))
+        {   
+            // Prevent an overflow after a terabyte of bits
+            if(psuAttributes->ullBitsLoaded > 1000000000000)
+                psuAttributes->ullBitsLoaded = 1000000000;
+
+            psuAttributes->ullSyncCount++;
+
+            //TRACE("Sync word found at BitPos %6d, MFBitCnt %5d, 0x%08X, SyncCnt %6d\n", 
+            //  psuAttributes->ulBitPosition, psuAttributes->ulMinorFrameBitCount, (int32_t)psuAttributes->ullTestWord, psuAttributes->ullSyncCount);
+
+            if(psuAttributes->ulMinorFrameBitCount == psuAttributes->ulBitsInMinorFrame)
+            {
+                // A sync word found at the correct offset to the previous one
+
+                RenewSyncCounters_PcmF1(psuAttributes, psuAttributes->ullSyncCount); // with the current sync counter
+                
+                // If there are enough syncs, release the previous filled outbuf
+                // Note: a minor frame is released only, if it is followed by a sync word at the correct offset. 
+                // i.e. the sync word are used as brackets
+                if((psuAttributes->ullSyncCount >= psuAttributes->ulMinSyncs) && (psuAttributes->lSaveData > 1)) 
+                {
+
+                    // Compute the intrapacket time of the start sync bit position in the current buffer
+                    int64_t llBitPosition = (int64_t)psuAttributes->ulBitPosition - (int64_t)psuAttributes->ulBitsInMinorFrame /*- (int64_t)psuAttributes->ulMinorFrameSyncPatLen*/;
+
+                    double dOffsetIntPktTime = (double)llBitPosition * psuAttributes->dDelta100NanoSeconds;   
+
+                    psuMsg->llIntPktTime = psuMsg->llBaseIntPktTime + (int64_t)dOffsetIntPktTime; // Relative time, omit rounding
+
+                    // Prepare for the next run
+                    PrepareNewMinorFrameCollection_PcmF1(psuAttributes);
+                    return I106_OK;
+
+                }
+
+            }
+            else
+            {
+                // A sync word at the wrong offset, throw away all
+                // Note: a wrong offset is also at the first sync in the whole decoding run
+
+                // Save the sync error for statistics
+                if(psuAttributes->ullSyncCount > 0)
+                    psuAttributes->ullSyncErrors++;
+
+                // RenewSyncCounters_PcmF1 with a sync counter of zero
+                RenewSyncCounters_PcmF1(psuAttributes, 0);
+            }
+
+            PrepareNewMinorFrameCollection_PcmF1(psuAttributes);
+            continue;
+
+        } // if sync found
+
+        // Collect the data
+
+        if(psuAttributes->lSaveData == 1)
+        {
+            psuAttributes->ulDataWordBitCount++;
+            if(psuAttributes->ulDataWordBitCount >= psuAttributes->ulCommonWordLen)
+            {
+                psuAttributes->paullOutBuf[psuAttributes->ulMinorFrameWordCount - 1] = psuAttributes->ullTestWord;
+                psuAttributes->ulDataWordBitCount = 0;
+                //TRACE("MFWC %d 0x%I64x\n", psuAttributes->ulMinorFrameWordCount - 1, psuAttributes->paullOutBuf[psuAttributes->ulMinorFrameWordCount - 1]);
+                psuAttributes->ulMinorFrameWordCount++;
+            }
+        }
+        if(psuAttributes->ulMinorFrameWordCount >= psuAttributes->ulWordsInMinorFrame)
+        {
+            psuAttributes->lSaveData = 2;
+
+            // Don't release the data here but wait for a trailing sync word. 
+        }
+    } // end while
+
+    // Preset for the next run
+    psuAttributes->ulBitPosition = 0;
+
+  return I106_NO_MORE_DATA;
+} //End DecodeMinorFram_PcmF1
 
 /* ----------------------------------------------------------------------- */
 // Returns I106_OK on success, I106_INVALID_DATA on error

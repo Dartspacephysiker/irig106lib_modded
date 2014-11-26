@@ -266,6 +266,7 @@ typedef PUBLIC struct SuRDataSource_S
     int                         iAnalogSampleFactor;
     char                      * szAnalogSampleFilter;   // (R-x\ASBW-n-m)
     char                      * szAnalogIsDCCoupled;   // (R-x\ACP-n-m)
+    int                         bAnalogIsDCCoupled;
     char                      * szAnalogRecImpedance;   // (R-x\AII-n-m)
     int                         iAnalogRecImpedance;
     char                      * szAnalogChanGain;       // (R-x\AGI-n-m)
@@ -279,9 +280,10 @@ typedef PUBLIC struct SuRDataSource_S
     char                      * szAnalogEUCOffset;      // (R-x\AECO-n-m)
     char                      * szAnalogEUCUnits;       // (R-x\AECU-n-m)
     char                      * szAnalogFormat;         // (R-x\AF-n-m)
-    char                      * szAnalogInputType;      // (R-x\AIT-n-m)
-    char                      * szAnalogIsAudio;          // (R-x\AV-n-m)
-      //    int                         bAnalogIsAudio;
+    char                      * szAnalogDifferentialInp;// (R-x\AIT-n-m)
+    int                         bAnalogDifferentialInp; //
+    char                      * szAnalogIsAudio;        // (R-x\AV-n-m)
+    int                         bAnalogIsAudio;
     char                      * szAnalogAudioFormat;    // (R-x\AVF-n-m)                                                          
       
     struct SuMRecord_S        * psuMRecord;             // Corresponding M record

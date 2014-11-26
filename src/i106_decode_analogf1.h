@@ -129,15 +129,15 @@ typedef struct AnalogF1_Attributes_S
     uint64_t        ullAnalogSampleFilter;  // (R-x\ASBW-n-m)
     uint32_t        bAnalogIsDCCoupled;     // D (0) / A (1)  R-x\ACP-n-m
     uint32_t        ulAnalogRecImpedance;   // (R-x\AII-n-m)
-    int32_t         lAnalogChanGain;        // (R-x\AGI-n-m)
+    int32_t         ulAnalogChanGain;        // (R-x\AGI-n-m)
     uint32_t        ulAnalogFullScaleRange; // (R-x\AFSI-n-m)
     int32_t         lAnalogOffsetVoltage;   // (R-x\AOVI-n-m)
     int32_t         lAnalogLSBValue;        // (R-x\ALSV-n-m)
     /* char          * szAnalogEUCSlope;       // (R-x\AECS-n-m) */
     /* char          * szAnalogEUCOffset;      // (R-x\AECO-n-m) */
     /* char          * szAnalogEUCUnits;       // (R-x\AECU-n-m) */
-    /* char          * szAnalogFormat;         // (R-x\AF-n-m) */
-    /* char          * szAnalogInputType;      // (R-x\AIT-n-m) */
+    char          * szAnalogFormat;         // (R-x\AF-n-m)
+    char          * szAnalogInputType;      // (R-x\AIT-n-m)
     uint32_t        bAnalogIsAudio;         // (R-x\AV-n-m)
     uint32_t        ulAnalogAudioFormat;    // (R-x\AVF-n-m)      
       

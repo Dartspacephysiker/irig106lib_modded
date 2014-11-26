@@ -60,6 +60,13 @@ typedef enum
     ANALOG_RESERVED               = 2,
     ANALOG_UNPACKED_MSB_PADDED    = 3,
 } ANALOG_MODE;
+
+typedef enum 
+{
+    ANALOG_MSB_FIRST       = 0,
+    ANALOG_LSB_FIRST       = 1,
+} ANALOG_BIT_TRANSFER_ORDER;
+
 /*
  * Data structures
  * ---------------
@@ -112,30 +119,32 @@ typedef struct AnalogF1_Attributes_S
     int             iAnalogChansPerPkt;     // (R-1\ACH\N-n) //ORIG
     uint64_t        ullAnalogSampleRate;    // (R-1\ASR-n)   //ORIG
 
-    uint32_t        bIsAnalogDataPacked;    // (R-1\ADP-n)   //ORIG
+    uint32_t        bAnalogIsDataPacked;    // (R-1\ADP-n)   //ORIG
     char          * szAnalogMeasurementNam; // (R-x\AMN-n-m)
     uint32_t        ulAnalogDataLength;     // (R-x\ADL-n-m)
     char          * szAnalogBitMask;        // (R-x\AMSK-n-m)
-    char          * szAnalogMeasTransfOrd;  // (R-x\AMTO-n-m)
+      //    char          * szAnalogMeasTransfOrd;  // 
+    uint32_t        ulAnalogMeasTransfOrd;  // Msb (0)/ LSB (1, unsupported) R-x\AMTO-n-m
     uint32_t        ulAnalogSampleFactor;   // (R-x\ASF-n-m)
     uint64_t        ullAnalogSampleFilter;  // (R-x\ASBW-n-m)
-    uint32_t        bIsAnalogDCCoupled;     // (R-x\ACP-n-m)
+    uint32_t        bAnalogIsDCCoupled;     // D (0) / A (1)  R-x\ACP-n-m
     uint32_t        ulAnalogRecImpedance;   // (R-x\AII-n-m)
     int32_t         lAnalogChanGain;        // (R-x\AGI-n-m)
     uint32_t        ulAnalogFullScaleRange; // (R-x\AFSI-n-m)
     int32_t         lAnalogOffsetVoltage;   // (R-x\AOVI-n-m)
     int32_t         lAnalogLSBValue;        // (R-x\ALSV-n-m)
-    char          * szAnalogEUCSlope;       // (R-x\AECS-n-m)
-    char          * szAnalogEUCOffset;      // (R-x\AECO-n-m)
-    char          * szAnalogEUCUnits;       // (R-x\AECU-n-m)
-    char          * szAnalogFormat;         // (R-x\AF-n-m)
-    char          * szAnalogInputType;      // (R-x\AIT-n-m)
-    uint32_t        bIsAnalogAudio;         // (R-x\AV-n-m)
+    /* char          * szAnalogEUCSlope;       // (R-x\AECS-n-m) */
+    /* char          * szAnalogEUCOffset;      // (R-x\AECO-n-m) */
+    /* char          * szAnalogEUCUnits;       // (R-x\AECU-n-m) */
+    /* char          * szAnalogFormat;         // (R-x\AF-n-m) */
+    /* char          * szAnalogInputType;      // (R-x\AIT-n-m) */
+    uint32_t        bAnalogIsAudio;         // (R-x\AV-n-m)
     uint32_t        ulAnalogAudioFormat;    // (R-x\AVF-n-m)      
       
-
-      // Needed for some strange Pcm sources
-    uint32_t    bDontSwapRawData;           // Inhibit byte or word swap on the raw input data
+    // Stuff from SuRRecord
+    uint32_t        ulNumDataSources;       // R-x\N
+    uint32_t        bIndexEnabled;          // R-x\ID
+    uint32_t        bEventsEnabled;         //R-x\EV\E
 
     // Computed values 
 
@@ -157,8 +166,7 @@ typedef struct AnalogF1_Attributes_S
     uint64_t    ullBitsLoaded;              // Bits already loaded (and shifted through) the TestWord. 
     // The amount must be at least the sync word len to check for a sync word
     uint32_t    ulBitPosition;              // Bit position in the current buffer
-    uint32_t    ulMinorFrameBitCount;       // Counter for the number of bits in a minor frame (inclusive syncword)
-    uint32_t    ulMinorFrameWordCount;      // Counter for the Minor frame words (inclusive syncword)
+
     uint32_t    ulDataWordBitCount;         // Counter for the bits of a data word
     int32_t     lSaveData;                  // Save the data (0: do nothing, 1 save, 2: save terminated)
 
@@ -176,17 +184,17 @@ typedef struct
         SuI106Ch10Header       * psuHeader;        // The overall packet header
         SuAnalogF1_ChanSpec    * psuChanSpec;      // Header in the data stream
         SuAnalogF1_Attributes  * psuAttributes;    // Pointer to the Pcm Format structure, values must be imported from TMATS 
-                                                // or another source
-        SuAnalogF1_IntraPktHeader * psuIntraPktHdr;// Optional intra packet header, consists of the time 
+                                                   // or another source
+      //        SuAnalogF1_IntraPktHeader * psuIntraPktHdr;// Optional intra packet header, consists of the time 
         // suIntraPckTime (like SuIntraPacketTS) and the header itself
-        unsigned int        uBytesRead;         // Number of bytes read in this message
-        uint32_t            ulDataLen;          // Overall data packet length
-        int64_t             llIntPktTime;       // Intrapacket or header time ! Relative Time !
-        int64_t             llBaseIntPktTime;   // Intrapacket or header time ! Relative Time !
-        uint32_t            ulSubPacketLen;     // MinorFrameLen in Bytes padded, see bAlignment. 
+        unsigned int        uBytesRead;            // Number of bytes read in this message
+        uint32_t            ulDataLen;             // Overall data packet length
+      //        int64_t             llIntPktTime;          // Intrapacket or header time ! Relative Time !
+      //        int64_t             llBaseIntPktTime;      // Intrapacket or header time ! Relative Time !
+      //        uint32_t            ulSubPacketLen;        // MinorFrameLen in Bytes padded, see bAlignment. 
         // In throughput mode it's the length of the whole packet
-        uint32_t            ulSubPacketBits;    // MinorFrameLen in Bits
-        uint8_t             * pauData;          // Pointer to the start of the data
+      //        uint32_t            ulSubPacketBits;       // MinorFrameLen in Bits
+        uint8_t             * pauData;             // Pointer to the start of the data
         SuTimeRef           suTimeRef;
 
 #if !defined(__GNUC__)

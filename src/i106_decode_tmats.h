@@ -256,7 +256,7 @@ typedef PUBLIC struct SuRDataSource_S
     char                      * szAnalogChansPerPkt;    // (R-1\ACH\N-n) //ORIG
     char                      * szAnalogSampleRate;     // (R-1\ASR-n)   //ORIG
     int                         iAnalogSampleRate;   
-    char                      * szAnalogDataPacking;    // (R-1\ADP-n)   //ORIG
+    char                      * szAnalogIsDataPacked;    // (R-1\ADP-n)   //ORIG
     char                      * szAnalogMeasurementNam; // (R-x\AMN-n-m)
     char                      * szAnalogDataLength;     // (R-x\ADL-n-m)
     int                         iAnalogDataLength;
@@ -265,7 +265,7 @@ typedef PUBLIC struct SuRDataSource_S
     char                      * szAnalogSampleFactor;   // (R-x\ASF-n-m)
     int                         iAnalogSampleFactor;
     char                      * szAnalogSampleFilter;   // (R-x\ASBW-n-m)
-    char                      * szAnalogACDCCoupling;   // (R-x\ACP-n-m)
+    char                      * szAnalogIsDCCoupled;   // (R-x\ACP-n-m)
     char                      * szAnalogRecImpedance;   // (R-x\AII-n-m)
     int                         iAnalogRecImpedance;
     char                      * szAnalogChanGain;       // (R-x\AGI-n-m)
@@ -280,8 +280,8 @@ typedef PUBLIC struct SuRDataSource_S
     char                      * szAnalogEUCUnits;       // (R-x\AECU-n-m)
     char                      * szAnalogFormat;         // (R-x\AF-n-m)
     char                      * szAnalogInputType;      // (R-x\AIT-n-m)
-    char                      * szAnalogAudio;          // (R-x\AV-n-m)
-      //    int                         bAnalogAudio;
+    char                      * szAnalogIsAudio;          // (R-x\AV-n-m)
+      //    int                         bAnalogIsAudio;
     char                      * szAnalogAudioFormat;    // (R-x\AVF-n-m)                                                          
       
     struct SuMRecord_S        * psuMRecord;             // Corresponding M record

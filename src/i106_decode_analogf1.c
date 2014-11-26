@@ -136,93 +136,32 @@ EnI106Status I106_CALL_DECL
         return I106_NO_MORE_DATA;
 
     // Save the time from the packet header
-    vTimeArray2LLInt(psuHeader->aubyRefTime, &(psuMsg->llBaseIntPktTime));
+    //    vTimeArray2LLInt(psuHeader->aubyRefTime, &(psuMsg->llBaseIntPktTime));
 
-    // Some precalculations inclusive time
-    if(psuMsg->psuChanSpec->bThruMode)
-    {
-        // Throughput mode, no intra packet header present
-        // -----------------------------------------------
-        psuMsg->psuIntraPktHdr = NULL;
+    // Take the whole remaining data buffer as packet len
+    psuMsg->ulSubPacketLen = psuMsg->ulDataLen - psuMsg->uBytesRead;
 
-        // Take the whole remaining data buffer as packet len
-        psuMsg->ulSubPacketLen = psuMsg->ulDataLen - psuMsg->uBytesRead;
-
-        // The IntPktTime is recalculated later from the bit position
-        psuMsg->llIntPktTime = psuMsg->llBaseIntPktTime;
-    }
-    else
-    {
-        // Not troughput mode, an intra packet header must be present
-        // NOTE: UNTESTED
-        // ----------------------------------------------------------
-
-        psuMsg->psuIntraPktHdr = (SuAnalogF1_IntraPktHeader *) ((char *)(psuMsg->psuChanSpec) + psuMsg->uBytesRead);
-        psuMsg->uBytesRead += sizeof(SuAnalogF1_IntraPktHeader);
-
-        // If there is no space for data
-        if (psuMsg->ulDataLen <= psuMsg->uBytesRead)
-            return I106_NO_MORE_DATA;
-
-        if( ! psuMsg->psuChanSpec->bAlignment) // 16 bit alignement
-        {
-            uRemainder = ulSubPacketLen & 0xf; // %16
-            ulSubPacketLen >>= 4; // /= 16;
-
-            if(uRemainder)
-                ulSubPacketLen += 1;
-            ulSubPacketLen <<= 1; // * 2
-        }
-        else // 32 bit alignement
-        {
-            uRemainder = ulSubPacketLen & 0x1f; // % 32
-            ulSubPacketLen >>= 5; // / 32
-
-            if(uRemainder)
-                ulSubPacketLen += 1;
-            ulSubPacketLen <<= 2; // * 4
-        }
-        psuMsg->ulSubPacketLen = ulSubPacketLen; 
-
-        // Fetch the time from the intra packet header
-        vFillInTimeStruct(psuHeader, (SuIntraPacketTS *)psuMsg->psuIntraPktHdr, &psuMsg->suTimeRef);
-        // and publish it   
-        psuMsg->llIntPktTime = psuMsg->suTimeRef.uRelTime;
-
-    }
-
-    // We continue with the throughput mode
     // ------------------------------------
 
-    // Check for the amount of the remaining data including the length of the data
-    if(psuMsg->ulDataLen < psuMsg->uBytesRead + psuMsg->ulSubPacketLen)
-        return I106_NO_MORE_DATA;
+    //This was used to check for remaining data based on subpacket--do we need to do anything
+    //similar?
+    /* if(psuMsg->ulDataLen < psuMsg->uBytesRead + psuMsg->ulSubPacketLen) */
+    /*     return I106_NO_MORE_DATA; */
 
     // Set the pointer to the Analog message data
     psuMsg->pauData = (uint8_t *)((char *)(psuMsg->psuChanSpec) + psuMsg->uBytesRead);
 
+    //what is all this?
     //for(int count= 0; count < 128; count++)
     //  TRACE(" %2.2X", psuMsg->pauData[count]);
     //TRACE("\n");
 
+    //why are we saying we've read the data? All we did was set the pointer...
     psuMsg->uBytesRead += psuMsg->ulSubPacketLen;
-
-    // For troughput mode
-    psuMsg->ulSubPacketBits = psuMsg->ulSubPacketLen * 8;
 
     // Prepare the Analog buffers and load the first bits
     if(psuMsg->psuAttributes->bPrepareNextDecodingRun)
     {
-
-        #ifdef DEBUG_OTHER_ANALOG_FILE
-        if(FileAnalogTest == NULL)
-        {
-            FileAnalogTest = fopen("d:\\projects\\winspo\\winspoca\\F1249\\PC101039.ftr", "rb");
-            if(FileAnalogTest == NULL)
-                return I106_NO_MORE_DATA;
-            fseek(FileAnalogTest, 0x64, SEEK_SET);
-        }
-        #endif
 
         // Set up the data
         EnI106Status enStatus = PrepareNextDecodingRun_AnalogF1(psuMsg);
@@ -322,7 +261,6 @@ EnI106Status I106_CALL_DECL
 
 }
 
-
 /* ----------------------------------------------------------------------- */
 
 // Fill the attributes from TMATS 
@@ -342,194 +280,154 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
 
     // Collect the TMATS values
     // ------------------------
-    // Essential values for throughput mode are: 
-    //      ...We have no 'throughput mode' for analog data!
+    //What values do we need to process analog data, Spence?
+    //      uint32_t    uMode           :  2;      // 
+    //      uint32_t    uLength         :  6;      // Bits in A/D value
+    //      uint32_t    uSubChan        :  8;      // Subchannel number
+    //      uint32_t    uTotChan        :  8;      // Total number of subchannels
+    //      uint32_t    uFactor         :  4;      // Sample rate exponent
+    //      uint32_t    bSame           :  1;      // One/multiple Channel Specific
     
 
     psuAnalogF1_Attributes->psuRDataSrc                = psuRDataSrc; // May be, we need it in the future
 
     psuAnalogF1_Attributes->iRecordNum                 = psuRRecord->iRecordNum; // R-x
 
-    if(psuRRecord->szBitsPerSec != NULL)
-        psuAnalogF1_Attributes->ulBitsPerSec           = atol(psuRRecord->szBitsPerSec); // P-x\D2
-    if(psuRRecord->szCommonWordLen != NULL)
-        psuAnalogF1_Attributes->ulCommonWordLen        = atol(psuRRecord->szCommonWordLen); // P-x\F1
+    if(psuRDataSrc->szNumDataSources != NULL)
+      
+    //Get number of chans per packet
+    if(psuRRDataSrc->szAnalogChansPerPkt != NULL)
+      psuAnalogF1_Attributes->iAnalogChansPerPkt = atoi(psuRRecord->szAnalogChansPerPkt);
 
-    if(psuRRecord->szWordTransferOrder != NULL)    // P-x\F2 most significant bit "M", least significant bit "L". default: M
+    //Get sample rate
+    if(psuRDataSrc->szAnalogSampleRate != NULL)
+       psuAnalogF1_Attributes->ullAnalogSampleRate = strtoull(psuRDataSrc->szAnalogSampleRate, NULL, 10);
+
+    //Get size of a data sample on this channel
+    if(psuRDataSrc->szAnalogDataLength != NULL)
+       psuAnalogF1_Attributes->ulAnalogDataLength = strtoul(psuRDataSrc->szAnalogDataLength, NULL, 10);
+
+    //Get Recorder Input Impedance
+    if(psuRDataSrc->szAnalogRecImpedance != NULL)
+       psuAnalogF1_Attributes->ulAnalogRecImpedance = strtoul(psuRDataSrc->szAnalogRecImpedance, NULL, 10);
+
+    //Get Channel Gain
+    if(psuRDataSrc->szAnalogChanGain != NULL)
+       psuAnalogF1_Attributes->lAnalogChanGain = strtoul(psuRDataSrc->szAnalogChanGain, NULL, 10);
+
+    //Get Full-Scale Range
+    if(psuRDataSrc->szAnalogFullScaleRange != NULL)
+       psuAnalogF1_Attributes->ulAnalogFullScaleRange = strtoul(psuRDataSrc->szAnalogFullScaleRange, NULL, 10);
+
+    //Get Offset Voltage
+    if(psuRDataSrc->szAnalogOffsetVoltage != NULL)
+       psuAnalogF1_Attributes->lAnalogOffsetVoltage = strtoul(psuRDataSrc->szAnalogOffsetVoltage, NULL, 10);
+
+    //Get LSB Value
+    if(psuRDataSrc->szAnalogLSBValue != NULL)
+       psuAnalogF1_Attributes->lAnalogLSBValue = strtoul(psuRDataSrc->szAnalogLSBValue, NULL, 10);
+
+    //
+    if(psuRDataSrc->szAnalogMeasTransferOrder != NULL)    // R-x\AMTO-n-m most significant bit "M", least significant bit "L". default: M
     {
         /*
         Measurement Transfer Order. Which bit is being transferred first is specified as – Most Significant Bit (M), 
         Least Significant Bit (L), or Default (D). The default is specified in the P-Group - (P-x\F2:M).
         D-1\MN3-1-1:M;
         */
-        if(psuRRecord->szWordTransferOrder[0] == 'L')
+        if(psuRDataSrc->szMeasTransferOrder[0] == 'L')
         {
             psuAnalogF1_Attributes->ulWordTransferOrder = ANALOG_LSB_FIRST;
             return(I106_UNSUPPORTED);
         }
     }
-    if(psuRRecord->szParityType != NULL)  // P-x/F3
-    {
-        //even "EV", odd "OD", or none "NO", default: none
-        if (strncasecmp(psuRRecord->szParityType, "EV", 2) == 0) 
-            psuAnalogF1_Attributes->ulParityType = ANALOG_PARITY_EVEN;
-        else if (strncasecmp(psuRRecord->szParityType, "OD", 2) == 0) 
-            psuAnalogF1_Attributes->ulParityType = ANALOG_PARITY_EVEN; 
-        else
-            psuAnalogF1_Attributes->ulParityType = ANALOG_PARITY_NONE;
-    }
-    if(psuRRecord->szParityTransferOrder != NULL)
-    {
-        if (strncasecmp(psuRRecord->szParityType, "L", 1) == 0)    // P-x/F4
-            psuAnalogF1_Attributes->ulParityTransferOrder = 1;
-        else
-            psuAnalogF1_Attributes->ulParityTransferOrder = 0;
-    }
-    if(psuRRecord->szNumMinorFrames != NULL)
-        psuAnalogF1_Attributes->ulNumMinorFrames       = atol(psuRRecord->szNumMinorFrames); // P-x\MF\N
-
-    if(psuRRecord->szWordsInMinorFrame != NULL)
-        psuAnalogF1_Attributes->ulWordsInMinorFrame    = atol(psuRRecord->szWordsInMinorFrame); // P-x\MF1
-
-    if(psuRRecord->szBitsInMinorFrame != NULL)
-        psuAnalogF1_Attributes->ulBitsInMinorFrame     = atol(psuRRecord->szBitsInMinorFrame); // P-x\MF2
-
-    if(psuRRecord->szMinorFrameSyncType != NULL)
-    {
-        // if not "FPT" : Error
-        if (strncasecmp(psuRRecord->szMinorFrameSyncType, "FPT", 3) != 0) // P-x\MF3
-            return(I106_UNSUPPORTED);
-        psuAnalogF1_Attributes->ulMinorFrameSyncType = 0;
-    }
-
-    if(psuRRecord->szMinorFrameSyncPatLen != NULL)
-        psuAnalogF1_Attributes->ulMinorFrameSyncPatLen = atol(psuRRecord->szMinorFrameSyncPatLen); // P-x\MF4
-
-    if(psuRRecord->szInSyncCrit != NULL)
-    {
-        // to declare that the system is in sync – First good sync (0), Check (1 or greater), or Not specified (NS).
-        psuAnalogF1_Attributes->ulMinSyncs = 0; // Minimal number of syncs P-x\SYNC1;
-    }
-        
-    if(psuRRecord->szMinorFrameSyncPat != NULL) // P-x\MF5
-    {
-        uint64_t ullSyncPat = 0;
-        uint64_t ullSyncMask = 0;
-        uint32_t ulMinorFrameSyncPatLen = 0;
-        char *pChar = psuRRecord->szMinorFrameSyncPat;
-        //Example: 0xFE6B2840
-        //static char *xx = "11111110011010110010100001000000";
-        //pChar = xx;
-            
-        // Skip leading blanks
-        while(*pChar == ' ')
-            pChar++;
-        // Transfer the sync bits
-        while((*pChar == '0') || (*pChar == '1'))
-        {
-            ulMinorFrameSyncPatLen++;
-            ullSyncMask <<= 1;
-            ullSyncMask |= 1;
-            
-            ullSyncPat <<= 1;
-            if(*pChar == '1') 
-                ullSyncPat |= 1;
-            pChar++;
-        }
-        psuAnalogF1_Attributes->ullMinorFrameSyncPat = ullSyncPat;
-        psuAnalogF1_Attributes->ullMinorFrameSyncMask = ullSyncMask;
-        if(psuAnalogF1_Attributes->ulMinorFrameSyncPatLen == 0)
-            psuAnalogF1_Attributes->ulMinorFrameSyncPatLen = ulMinorFrameSyncPatLen;
-    } // minor frame sync pat
         
     // Some post processing
-    if(psuAnalogF1_Attributes->ulBitsInMinorFrame == 0)
-    {
-        psuAnalogF1_Attributes->ulBitsInMinorFrame = psuAnalogF1_Attributes->ulCommonWordLen * (psuAnalogF1_Attributes->ulWordsInMinorFrame - 1) +
-            psuAnalogF1_Attributes->ulMinorFrameSyncPatLen;
-    }
-    for(uBitCount = 0; uBitCount < psuAnalogF1_Attributes->ulCommonWordLen; uBitCount++)
-    {
-        psuAnalogF1_Attributes->ullCommonWordMask <<= 1;
-        psuAnalogF1_Attributes->ullCommonWordMask |= 1;
-    }
-        
-    psuAnalogF1_Attributes->dDelta100NanoSeconds = d100NANOSECONDS / psuAnalogF1_Attributes->ulBitsPerSec;
+    /* if(psuAnalogF1_Attributes->ulBitsInMinorFrame == 0) */
+    /* { */
+    /*     psuAnalogF1_Attributes->ulBitsInMinorFrame = psuAnalogF1_Attributes->ulCommonWordLen * (psuAnalogF1_Attributes->ulWordsInMinorFrame - 1) + */
+    /*         psuAnalogF1_Attributes->ulMinorFrameSyncPatLen; */
+    /* } */
+    /* for(uBitCount = 0; uBitCount < psuAnalogF1_Attributes->ulCommonWordLen; uBitCount++) */
+    /* { */
+    /*     psuAnalogF1_Attributes->ullCommonWordMask <<= 1; */
+    /*     psuAnalogF1_Attributes->ullCommonWordMask |= 1; */
+    /* } */
         
     psuAnalogF1_Attributes->bPrepareNextDecodingRun = 1; // Set_Attributes_AnalogF1
         
     return I106_OK;
 } // End Set_Attributes _AnalogF1
 
-/* ----------------------------------------------------------------------- */
-// Fill the attributes from an external source
-// Replace the correspondent TMATS values, if the argument value is >= 0
-EnI106Status I106_CALL_DECL 
-    Set_Attributes_Ext_AnalogF1(SuRDataSource * psuRDataSrc, SuAnalogF1_Attributes * psuAnalogF1_Attributes,
-    //      P-x                 P-x\D2               P-x\F1                   P-x\F2
-    int32_t lRecordNum, int32_t lBitsPerSec, int32_t lCommonWordLen, int32_t lWordTransferOrder,
-    //       P-x\F3               P-x\F4
-    int32_t lParityType, int32_t lParityTransferOrder,
-    //      P-x\MF\N                 P-x\MF1                     P-x\MF2            P-x\MF3
-    int32_t lNumMinorFrames, int32_t lWordsInMinorFrame, int32_t lBitsInMinorFrame, int32_t lMinorFrameSyncType,
-    //      P-x\MF4                        P-x\MF5                      P-x\SYNC1 
-    int32_t lMinorFrameSyncPatLen, int64_t llMinorFrameSyncPat, int32_t lMinSyncs, 
-    //      External                      External
-    int64_t llMinorFrameSyncMask, int32_t lNoByteSwap)
-{
-    uint32_t BitCount;
-    if(psuRDataSrc == NULL) return I106_INVALID_PARAMETER; // Set Attributes Ext
+/* /\* ----------------------------------------------------------------------- *\/ */
+/* // Fill the attributes from an external source */
+/* // Replace the correspondent TMATS values, if the argument value is >= 0 */
+/* EnI106Status I106_CALL_DECL  */
+/*     Set_Attributes_Ext_AnalogF1(SuRDataSource * psuRDataSrc, SuAnalogF1_Attributes * psuAnalogF1_Attributes, */
+/*     //      P-x                 P-x\D2               P-x\F1                   P-x\F2 */
+/*     int32_t lRecordNum, int32_t lBitsPerSec, int32_t lCommonWordLen, int32_t lWordTransferOrder, */
+/*     //       P-x\F3               P-x\F4 */
+/*     int32_t lParityType, int32_t lParityTransferOrder, */
+/*     //      P-x\MF\N                 P-x\MF1                     P-x\MF2            P-x\MF3 */
+/*     int32_t lNumMinorFrames, int32_t lWordsInMinorFrame, int32_t lBitsInMinorFrame, int32_t lMinorFrameSyncType, */
+/*     //      P-x\MF4                        P-x\MF5                      P-x\SYNC1  */
+/*     int32_t lMinorFrameSyncPatLen, int64_t llMinorFrameSyncPat, int32_t lMinSyncs,  */
+/*     //      External                      External */
+/*     int64_t llMinorFrameSyncMask, int32_t lNoByteSwap) */
+/* { */
+/*     uint32_t BitCount; */
+/*     if(psuRDataSrc == NULL) return I106_INVALID_PARAMETER; // Set Attributes Ext */
 
-    if(psuAnalogF1_Attributes == NULL) return I106_INVALID_PARAMETER; // Set Attributes Ext
+/*     if(psuAnalogF1_Attributes == NULL) return I106_INVALID_PARAMETER; // Set Attributes Ext */
 
-    // Transfer the external data
-    if(lRecordNum != -1)
-        psuAnalogF1_Attributes->iRecordNum = lRecordNum;
-    if(lBitsPerSec != -1)
-        psuAnalogF1_Attributes->ulBitsPerSec = lBitsPerSec;
-    if(lCommonWordLen != -1)
-        psuAnalogF1_Attributes->ulCommonWordLen = lCommonWordLen;
-    if(lWordTransferOrder != -1)
-        psuAnalogF1_Attributes->ulWordTransferOrder = lWordTransferOrder;
-    if(lParityType != -1)
-        psuAnalogF1_Attributes->ulParityType = lParityType;
-    if(lParityTransferOrder != -1)
-        psuAnalogF1_Attributes->ulParityTransferOrder = lParityTransferOrder;
-    if(lNumMinorFrames != -1)
-        psuAnalogF1_Attributes->ulNumMinorFrames = lNumMinorFrames;
-    if(lWordsInMinorFrame != -1)
-        psuAnalogF1_Attributes->ulWordsInMinorFrame = lWordsInMinorFrame;
-    if(lBitsInMinorFrame != -1)
-        psuAnalogF1_Attributes->ulBitsInMinorFrame = lBitsInMinorFrame;
-    if(lMinorFrameSyncType != -1)
-        psuAnalogF1_Attributes->ulMinorFrameSyncType = lMinorFrameSyncType;
-    if(lMinorFrameSyncPatLen != -1)
-        psuAnalogF1_Attributes->ulMinorFrameSyncPatLen = lMinorFrameSyncPatLen;
-    if(llMinorFrameSyncPat != -1)
-        psuAnalogF1_Attributes->ullMinorFrameSyncPat = llMinorFrameSyncPat;
-    if(llMinorFrameSyncMask != -1)
-        psuAnalogF1_Attributes->ullMinorFrameSyncMask = llMinorFrameSyncMask;
-    if(lMinSyncs != -1)
-        psuAnalogF1_Attributes->ulMinSyncs = lMinSyncs;
-    if(lNoByteSwap != -1)
-        psuAnalogF1_Attributes->bDontSwapRawData = lNoByteSwap;
+/*     // Transfer the external data */
+/*     if(lRecordNum != -1) */
+/*         psuAnalogF1_Attributes->iRecordNum = lRecordNum; */
+/*     if(lBitsPerSec != -1) */
+/*         psuAnalogF1_Attributes->ulBitsPerSec = lBitsPerSec; */
+/*     if(lCommonWordLen != -1) */
+/*         psuAnalogF1_Attributes->ulCommonWordLen = lCommonWordLen; */
+/*     if(lWordTransferOrder != -1) */
+/*         psuAnalogF1_Attributes->ulWordTransferOrder = lWordTransferOrder; */
+/*     if(lParityType != -1) */
+/*         psuAnalogF1_Attributes->ulParityType = lParityType; */
+/*     if(lParityTransferOrder != -1) */
+/*         psuAnalogF1_Attributes->ulParityTransferOrder = lParityTransferOrder; */
+/*     if(lNumMinorFrames != -1) */
+/*         psuAnalogF1_Attributes->ulNumMinorFrames = lNumMinorFrames; */
+/*     if(lWordsInMinorFrame != -1) */
+/*         psuAnalogF1_Attributes->ulWordsInMinorFrame = lWordsInMinorFrame; */
+/*     if(lBitsInMinorFrame != -1) */
+/*         psuAnalogF1_Attributes->ulBitsInMinorFrame = lBitsInMinorFrame; */
+/*     if(lMinorFrameSyncType != -1) */
+/*         psuAnalogF1_Attributes->ulMinorFrameSyncType = lMinorFrameSyncType; */
+/*     if(lMinorFrameSyncPatLen != -1) */
+/*         psuAnalogF1_Attributes->ulMinorFrameSyncPatLen = lMinorFrameSyncPatLen; */
+/*     if(llMinorFrameSyncPat != -1) */
+/*         psuAnalogF1_Attributes->ullMinorFrameSyncPat = llMinorFrameSyncPat; */
+/*     if(llMinorFrameSyncMask != -1) */
+/*         psuAnalogF1_Attributes->ullMinorFrameSyncMask = llMinorFrameSyncMask; */
+/*     if(lMinSyncs != -1) */
+/*         psuAnalogF1_Attributes->ulMinSyncs = lMinSyncs; */
+/*     if(lNoByteSwap != -1) */
+/*         psuAnalogF1_Attributes->bDontSwapRawData = lNoByteSwap; */
 
-    psuAnalogF1_Attributes->ullCommonWordMask = 0;
-    for(BitCount = 0; BitCount < psuAnalogF1_Attributes->ulCommonWordLen; BitCount++)
-    {
-         psuAnalogF1_Attributes->ullCommonWordMask <<= 1;
-         psuAnalogF1_Attributes->ullCommonWordMask |= 1;
-    }
+/*     psuAnalogF1_Attributes->ullCommonWordMask = 0; */
+/*     for(BitCount = 0; BitCount < psuAnalogF1_Attributes->ulCommonWordLen; BitCount++) */
+/*     { */
+/*          psuAnalogF1_Attributes->ullCommonWordMask <<= 1; */
+/*          psuAnalogF1_Attributes->ullCommonWordMask |= 1; */
+/*     } */
 
-    psuAnalogF1_Attributes->ullCommonWordMask &= psuAnalogF1_Attributes->ullMinorFrameSyncMask;
+/*     psuAnalogF1_Attributes->ullCommonWordMask &= psuAnalogF1_Attributes->ullMinorFrameSyncMask; */
 
-    psuAnalogF1_Attributes->dDelta100NanoSeconds = d100NANOSECONDS / psuAnalogF1_Attributes->ulBitsPerSec;
+/*     psuAnalogF1_Attributes->dDelta100NanoSeconds = d100NANOSECONDS / psuAnalogF1_Attributes->ulBitsPerSec; */
 
-    psuAnalogF1_Attributes->bPrepareNextDecodingRun = 1; // Set_Attributes_Ext_AnalogF1
+/*     psuAnalogF1_Attributes->bPrepareNextDecodingRun = 1; // Set_Attributes_Ext_AnalogF1 */
 
-  return I106_OK;
+/*   return I106_OK; */
 
-} // End Set_Attributes_Ext_ AnalogF1
+/* } // End Set_Attributes_Ext_ AnalogF1 */
 
 /* ----------------------------------------------------------------------- */
 
@@ -611,179 +509,39 @@ EnI106Status PrepareNextDecodingRun_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
 } // End PrepareNextDecodingRun
 
 /* ----------------------------------------------------------------------- */
-
-EnI106Status I106_CALL_DECL 
-    DecodeMinorFrame_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
-{
-
-    SuAnalogF1_Attributes * psuAttributes = psuMsg->psuAttributes;
-
-    while(psuAttributes->ulBitPosition < psuMsg->ulSubPacketBits)
-    {
-
-        GetNextBit_AnalogF1(psuMsg, psuAttributes);
-
-        // Check for a sync word
-
-        if(IsSyncWordFound_AnalogF1(psuAttributes))
-        {   
-            // Prevent an overflow after a terabyte of bits
-            if(psuAttributes->ullBitsLoaded > 1000000000000)
-                psuAttributes->ullBitsLoaded = 1000000000;
-
-            psuAttributes->ullSyncCount++;
-
-            //TRACE("Sync word found at BitPos %6d, MFBitCnt %5d, 0x%08X, SyncCnt %6d\n", 
-            //  psuAttributes->ulBitPosition, psuAttributes->ulMinorFrameBitCount, (int32_t)psuAttributes->ullTestWord, psuAttributes->ullSyncCount);
-
-            if(psuAttributes->ulMinorFrameBitCount == psuAttributes->ulBitsInMinorFrame)
-            {
-                // A sync word found at the correct offset to the previous one
-
-                RenewSyncCounters_AnalogF1(psuAttributes, psuAttributes->ullSyncCount); // with the current sync counter
-                
-                // If there are enough syncs, release the previous filled outbuf
-                // Note: a minor frame is released only, if it is followed by a sync word at the correct offset. 
-                // i.e. the sync word are used as brackets
-                if((psuAttributes->ullSyncCount >= psuAttributes->ulMinSyncs) && (psuAttributes->lSaveData > 1)) 
-                {
-
-                    // Compute the intrapacket time of the start sync bit position in the current buffer
-                    int64_t llBitPosition = (int64_t)psuAttributes->ulBitPosition - (int64_t)psuAttributes->ulBitsInMinorFrame /*- (int64_t)psuAttributes->ulMinorFrameSyncPatLen*/;
-
-                    double dOffsetIntPktTime = (double)llBitPosition * psuAttributes->dDelta100NanoSeconds;   
-
-                    psuMsg->llIntPktTime = psuMsg->llBaseIntPktTime + (int64_t)dOffsetIntPktTime; // Relative time, omit rounding
-
-                    // Prepare for the next run
-                    PrepareNewMinorFrameCollection_AnalogF1(psuAttributes);
-                    return I106_OK;
-
-                }
-
-            }
-            else
-            {
-                // A sync word at the wrong offset, throw away all
-                // Note: a wrong offset is also at the first sync in the whole decoding run
-
-                // Save the sync error for statistics
-                if(psuAttributes->ullSyncCount > 0)
-                    psuAttributes->ullSyncErrors++;
-
-                // RenewSyncCounters_AnalogF1 with a sync counter of zero
-                RenewSyncCounters_AnalogF1(psuAttributes, 0);
-            }
-
-            PrepareNewMinorFrameCollection_AnalogF1(psuAttributes);
-            continue;
-
-        } // if sync found
-
-        // Collect the data
-
-        if(psuAttributes->lSaveData == 1)
-        {
-            psuAttributes->ulDataWordBitCount++;
-            if(psuAttributes->ulDataWordBitCount >= psuAttributes->ulCommonWordLen)
-            {
-                psuAttributes->paullOutBuf[psuAttributes->ulMinorFrameWordCount - 1] = psuAttributes->ullTestWord;
-                psuAttributes->ulDataWordBitCount = 0;
-                //TRACE("MFWC %d 0x%I64x\n", psuAttributes->ulMinorFrameWordCount - 1, psuAttributes->paullOutBuf[psuAttributes->ulMinorFrameWordCount - 1]);
-                psuAttributes->ulMinorFrameWordCount++;
-            }
-        }
-        if(psuAttributes->ulMinorFrameWordCount >= psuAttributes->ulWordsInMinorFrame)
-        {
-            psuAttributes->lSaveData = 2;
-
-            // Don't release the data here but wait for a trailing sync word. 
-        }
-    } // end while
-
-    // Preset for the next run
-    psuAttributes->ulBitPosition = 0;
-
-  return I106_NO_MORE_DATA;
-}
-
-/* ----------------------------------------------------------------------- */
-// Prepare a new minor frame collection
- void PrepareNewMinorFrameCollection_AnalogF1(SuAnalogF1_Attributes * psuAttributes)
-{
-    psuAttributes->ulDataWordBitCount = 0;
-    psuAttributes->lSaveData = 1;
-}
-
-
-/* ----------------------------------------------------------------------- */
-// Get the next bit
-void GetNextBit_AnalogF1(SuAnalogF1_CurrMsg * psuMsg, SuAnalogF1_Attributes * psuAttributes)
-{
-    psuAttributes->ullTestWord <<= 1;
-    //TRACE("%d\n", psuAttributes->ulBitPosition);
-    if(IsBitSetL2R(psuMsg->pauData, psuAttributes->ulBitPosition))
-    {
-        psuAttributes->ullTestWord |= 1;
-    }
-    psuAttributes->ullBitsLoaded++;
-    psuAttributes->ulMinorFrameBitCount++;
-    psuAttributes->ulBitPosition++;
-
-}
-
-/* ----------------------------------------------------------------------- */
-// Check for a sync word
-int IsSyncWordFound_AnalogF1(SuAnalogF1_Attributes * psuAttributes)
-{
-    return((psuAttributes->ullBitsLoaded >= psuAttributes->ulMinorFrameSyncPatLen) && 
-                (psuAttributes->ullTestWord & psuAttributes->ullMinorFrameSyncMask) == psuAttributes->ullMinorFrameSyncPat);
-}
-
-/* ----------------------------------------------------------------------- */
-// RenewSyncCounters_AnalogF1
-void RenewSyncCounters_AnalogF1(SuAnalogF1_Attributes * psuAttributes, uint64_t ullSyncCount)
-{
-    psuAttributes->ulMinorFrameBitCount = 0; 
-    psuAttributes->ulMinorFrameWordCount = 1; // Note the 1: this is the sync word
-    psuAttributes->ulDataWordBitCount = 0;
-    psuAttributes->ullSyncCount = ullSyncCount;
-}
-
-/* ----------------------------------------------------------------------- */
 // Returns I106_OK on success, I106_INVALID_DATA on error
-EnI106Status I106_CALL_DECL
-    CheckParity_AnalogF1(uint64_t ullTestWord, int iWordLen, int iParityType, int iParityTransferOrder)
-          // check the parity of a word
-{
-    uint64_t ullTestBit = 1;
-    unsigned int uBitSum = 0;
+/* EnI106Status I106_CALL_DECL */
+/*     CheckParity_AnalogF1(uint64_t ullTestWord, int iWordLen, int iParityType, int iParityTransferOrder) */
+/*           // check the parity of a word */
+/* { */
+/*     uint64_t ullTestBit = 1; */
+/*     unsigned int uBitSum = 0; */
 
-    switch(iParityType)
-    {
-    case ANALOG_PARITY_NONE:
-        break;
-    case ANALOG_PARITY_EVEN:
-        while(iWordLen-- > 0)
-        {
-            if(ullTestWord & ullTestBit) uBitSum++;
-            ullTestBit <<= 1;
-        }
-        if(uBitSum & 1) return(I106_INVALID_DATA);
-        break;
-    case ANALOG_PARITY_ODD:
-        while(iWordLen-- > 0)
-        {
-            if(ullTestWord & ullTestBit) uBitSum++;
-            ullTestBit <<= 1;
-        }
-        if( ! (uBitSum & 1)) return(I106_INVALID_DATA);
-        break;
-    default: // none
-        break;
-    }
-    return(I106_OK);
-}
+/*     switch(iParityType) */
+/*     { */
+/*     case ANALOG_PARITY_NONE: */
+/*         break; */
+/*     case ANALOG_PARITY_EVEN: */
+/*         while(iWordLen-- > 0) */
+/*         { */
+/*             if(ullTestWord & ullTestBit) uBitSum++; */
+/*             ullTestBit <<= 1; */
+/*         } */
+/*         if(uBitSum & 1) return(I106_INVALID_DATA); */
+/*         break; */
+/*     case ANALOG_PARITY_ODD: */
+/*         while(iWordLen-- > 0) */
+/*         { */
+/*             if(ullTestWord & ullTestBit) uBitSum++; */
+/*             ullTestBit <<= 1; */
+/*         } */
+/*         if( ! (uBitSum & 1)) return(I106_INVALID_DATA); */
+/*         break; */
+/*     default: // none */
+/*         break; */
+/*     } */
+/*     return(I106_OK); */
+/* } */
 
 /* ----------------------------------------------------------------------- */
 // Swaps nBytes in place

@@ -250,7 +250,7 @@ EnI106Status I106_CALL_DECL
     PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec);
 
 EnI106Status I106_CALL_DECL
-   PrintAttributesfromTMATS_ANALOGF1(SuTmatsInfo * psuTmatsinfo);
+   PrintAttributesfromTMATS_ANALOGF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes);
 
 #ifdef __cplusplus
 } // end namespace

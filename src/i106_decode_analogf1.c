@@ -155,7 +155,7 @@ EnI106Status I106_CALL_DECL
 	//Copy CSDW into allocated mem for future reference
 	memcpy(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx], &(psuMsg->psuChanSpec[iSubChanIdx]), sizeof(SuAnalogF1_ChanSpec));
 
-	PrintCSDW_AnalogF1(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx]);
+	//	PrintCSDW_AnalogF1(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx]);
 	
 	iSubChanIdx++;
       }while ( iSubChanIdx < psuMsg->psuChanSpec->uTotChan );
@@ -167,7 +167,7 @@ EnI106Status I106_CALL_DECL
       //Copy CSDW into allocated mem for future reference
       memcpy(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx], &(psuMsg->psuChanSpec[iSubChanIdx]), sizeof(SuAnalogF1_ChanSpec));
 
-      PrintCSDW_AnalogF1(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx]);
+      //      PrintCSDW_AnalogF1(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx]);
     }
     
     psuMsg->uBytesRead += sizeof(SuAnalogF1_ChanSpec) * psuMsg->psuChanSpec->uTotChan;
@@ -490,103 +490,51 @@ EnI106Status I106_CALL_DECL PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec)
 
  EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_ANALOGF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes)
 {
-    SuRDataSource         * psuRDataSource;
-
-    if( ( psuRDataSource == NULL )  || ( psuAttributes == NULL ) )
+  
+  if( ( psuRDataSource == NULL )  || ( psuAttributes == NULL ) )
       return I106_INVALID_PARAMETER;
 
+  printf("\n");
+  printf("========================================\n");  
+  printf("TMATS Attributes, Data Source %s\n", psuRDataSource->szDataSourceID);
+  printf("========================================\n");
+  printf("\n");
+  //  printf("Data source ID\t\t\t:\t%s\n", psuRDataSource->szDataSourceID);
+  printf("Data source number\t\t:\t%i\n",psuRDataSource->iDataSourceNum);
+  printf("Channel Data type\t\t:\t%s\n",psuRDataSource->szChannelDataType);
+  printf("\n");
+  if(psuRDataSource->szAnalogChansPerPkt != NULL)
+    printf("Analog Channels/Packet\t\t:\t%i\n",psuAttributes->iAnalogChansPerPkt);
+  if(psuRDataSource->szAnalogSampleRate != NULL)
+      printf("Analog Sample Rate\t\t:\t%" PRIu64 "\tHz\n",psuAttributes->ullAnalogSampleRate);
+  if(psuRDataSource->szAnalogDataLength != NULL)
+      printf("Analog Data Length\t\t:\t%" PRIu32 "-bit\n",psuAttributes->ulAnalogDataLength);
+  if(psuRDataSource->szAnalogMeasTransfOrd != NULL)    // R-x\AMTO-n-m most significant bit "M", least significant bit "L". default: M
+      printf("Analog Meas Transfer Order\t:\t%c\n",psuRDataSource->szAnalogMeasTransfOrd[0]);
+  if(psuRDataSource->szAnalogSampleFactor != NULL)
+      printf("Analog Sample Factor\t\t:\t%" PRIu64 "\n",psuAttributes->ulAnalogSampleFactor);
+  if(psuRDataSource->szAnalogSampleFilter != NULL)
+      printf("Analog 3dB Sample Filter\t:\t%" PRIu32 "\tHz\n",psuAttributes->ullAnalogSampleFilter);
+  if(psuRDataSource->szAnalogIsDCCoupled != NULL)
+      printf("Analog AC/DC Coupling\t\t:\t%cC\n",psuRDataSource->szAnalogIsDCCoupled[0]);
+  if(psuRDataSource->szAnalogRecImpedance != NULL)
+      printf("Analog Recorder Input Impedance\t:\t%" PRIu32 "\t\tOhms\n",psuAttributes->ulAnalogRecImpedance);
+  if(psuRDataSource->szAnalogChanGain != NULL)
+      printf("Analog Channel Gain\t\t:\t%" PRIu32 "\t\tmilliunits\n",psuAttributes->ulAnalogChanGain);
+  if(psuRDataSource->szAnalogFullScaleRange != NULL)
+      printf("Analog Full-Scale Range\t\t:\t%" PRIu32 "\t\tmV\n",psuAttributes->ulAnalogFullScaleRange);
+  if(psuRDataSource->szAnalogOffsetVoltage != NULL)
+      printf("Analog Offset Voltage\t\t:\t%" PRIi32 "\t\tmV\n",psuAttributes->lAnalogOffsetVoltage);
+  if(psuRDataSource->szAnalogLSBValue != NULL)
+      printf("Analog LSB Value\t\t:\t%" PRIi32 "\n",psuAttributes->lAnalogLSBValue);
+  if(psuRDataSource->szAnalogFormat != NULL)
+      printf("Analog Data Format\t\t:\t%c\n",psuRDataSource->szAnalogFormat[0]);
+  if(psuRDataSource->szAnalogDifferentialInp != NULL)
+      printf("Analog Data Format\t\t:\t%c\n",psuRDataSource->szAnalogDifferentialInp[0]);
+  if(psuRDataSource->szAnalogIsAudio != NULL)
+      printf("Analog Chan Is Audio\t\t:\t%" PRIi32 "\n",psuAttributes->bAnalogIsAudio);
 
-    psuAttributes->iDataSourceNum             = psuRDataSource->iDataSourceNum; // R-x
-
-    printf("TMATS Attributes\n");
-    printf("================\n\n");
-    printf("Data source ID\t\t\t\t:\t\t%s\n", psuRDataSource->szDataSourceID);
-    printf("Data source number\t\t\t\t:\t\t%i\n",psuRDataSource->iDataSourceNum);
-    printf("Channel Data type\t\t\t\t:\t%i\n",psuRDataSource->szChannelDataType);
-    printf("\n");
-    printf("Channel Data type\t\t\t\t:\t%i\n",psuRDataSource->szChannelDataType);
-    if(psuRDataSource->szAnalogChansPerPkt != NULL)
-      printf("Analog Channels/Packet\t\t:\t%i\n",psuAttributes->iAnalogChansPerPkt);
-    if(psuRDataSource->szAnalogSampleRate != NULL)
-      printf("Analog Sample Rate\t\t\t:\t%" PRIu32 "\n",psuAttributes->ullAnalogSampleRate);
-    if(psuRDataSource->szAnalogDataLength != NULL)
-      printf("Analog Data Length\t\t\t:\t%" PRIu32 "\n",psuAttributes->ullAnalogDataLength);
-    if(psuRDataSource->szAnalogMeasTransfOrd != NULL)    // R-x\AMTO-n-m most significant bit "M", least significant bit "L". default: M
-        printf("Analog Measurement Transfer Order\t:\t%c\n",psuRDataSource->szAnalogMeasTransfOrd[0]);
-    if(psuRDataSource->szAnalogSampleFactor != NULL)
-      printf("Analog 3dB Sample Filter\t\t\t:\t%" PRIu32 "\n",psuAttributes->ullAnalogSampleFactor);
-    if(psuRDataSource->szAnalogSampleFilter != NULL)
-      printf("Analog 3dB Sample Filter\t\t\t:\t%" PRIu32 "\n",psuAttributes->ullAnalogSampleFilter);
-
-    //Get whether AC/DC Coupling
-    if(psuRDataSource->szAnalogIsDCCoupled != NULL)
-      psuAttributes->bAnalogIsDCCoupled = psuRDataSource->bAnalogIsDCCoupled;
-
-    //Get Recorder Input Impedance 
-    if(psuRDataSource->szAnalogRecImpedance != NULL)
-       psuAttributes->ulAnalogRecImpedance = strtoul(psuRDataSource->szAnalogRecImpedance, NULL, 10);
-
-    //Get Channel Gain in milli units (10x = 010000)
-    if(psuRDataSource->szAnalogChanGain != NULL)
-       psuAttributes->ulAnalogChanGain = strtoul(psuRDataSource->szAnalogChanGain, NULL, 10);
-
-    //Get Full-Scale Range (in milliVolts)
-    if(psuRDataSource->szAnalogFullScaleRange != NULL)
-       psuAttributes->ulAnalogFullScaleRange = strtoul(psuRDataSource->szAnalogFullScaleRange, NULL, 10);
-
-    //Get Offset Voltage (in milliVolts)
-    if(psuRDataSource->szAnalogOffsetVoltage != NULL)
-       psuAttributes->lAnalogOffsetVoltage = strtoul(psuRDataSource->szAnalogOffsetVoltage, NULL, 10);
-
-    //Get LSB Value
-    if(psuRDataSource->szAnalogLSBValue != NULL)
-       psuAttributes->lAnalogLSBValue = strtoul(psuRDataSource->szAnalogLSBValue, NULL, 10);
-
-    //Get Analog Format 
-    //"1" = One's comp. 
-    //"2" = Two's comp.
-    //"3" = Sign and magnitude binary [+=0]
-    //"4" = Sign and magnitude binary [+=1]
-    //"B" = Offset binary
-    //"U" = Unsigned binary
-    //"F" = IEEE 754 single-precision [IEEE 32] floating point
-    if(psuRDataSource->szAnalogFormat != NULL)
-      switch ( psuRDataSource->szAnalogFormat[0] )
-      {
-      case '1':
-	psuAttributes->ulAnalogFormat = ANALOG_FMT_ONES;
-	break;
-      case '2':
-	psuAttributes->ulAnalogFormat = ANALOG_FMT_TWOS; 
-	break;
-      case '3':
-	psuAttributes->ulAnalogFormat = ANALOG_FMT_SIGNMAG_0;
-	break;
-      case '4':
-	psuAttributes->ulAnalogFormat = ANALOG_FMT_SIGNMAG_1;
-	break;
-      case 'B':
-	psuAttributes->ulAnalogFormat = ANALOG_FMT_OFFSET_BIN;
-	break;
-      case 'U':
-	psuAttributes->ulAnalogFormat = ANALOG_FMT_UNSIGNED_BIN;
-	break;
-      case 'F':
-	psuAttributes->ulAnalogFormat = ANALOG_FMT_SINGLE_FLOAT;
-	break;
-      default:
-	return(I106_UNSUPPORTED);
-        break;
-      }
-
-    //Get analog input type; 'D' = differential, 'S' = single-ended
-    if(psuRDataSource->szAnalogDifferentialInp != NULL)
-       psuAttributes->bAnalogDifferentialInp = psuRDataSource->bAnalogDifferentialInp;
- 
-    //Get whether audio
-    if(psuRDataSource->szAnalogIsAudio != NULL)
-       psuAttributes->bAnalogIsAudio = psuRDataSource->bAnalogIsAudio;
-
+  return(I106_OK);
 }
 
  

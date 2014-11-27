@@ -66,17 +66,6 @@ namespace Irig106 {
  * ----------------------
  */
 
-typedef enum
-{
-  ANALOG_FMT_ONES          = 0,
-  ANALOG_FMT_TWOS          = 1,
-  ANALOG_FMT_SIGNMAG_0     = 2,
-  ANALOG_FMT_SIGNMAG_1     = 3,
-  ANALOG_FMT_OFFSET_BIN    = 4,
-  ANALOG_FMT_UNSIGNED_BIN  = 5,
-  ANALOG_FMT_SINGLE_FLOAT  = 6,
-} ANALOG_FORMAT;   // R-x\AF-n-m
-
 /*
  * Data structures
  * ---------------
@@ -125,6 +114,9 @@ EnI106Status I106_CALL_DECL
     psuMsg->psuHeader = psuHeader; 
     psuMsg->psuChanSpec = (SuAnalogF1_ChanSpec *)pvBuff; 
 
+    // Check whether number of subchannels reported by TMATS matches number reported by CSDW
+    if(psuMsg->psuAttributes->iAnalogChansPerPkt != psuMsg->apsuChanSpec[
+
     psuMsg->uBytesRead = 0;
     psuMsg->ulDataLen = psuHeader->ulDataLen;
     psuMsg->uBytesRead += sizeof(SuAnalogF1_ChanSpec);
@@ -132,9 +124,6 @@ EnI106Status I106_CALL_DECL
     // Check for no (more) data
     if (psuMsg->ulDataLen <= psuMsg->uBytesRead)
         return I106_NO_MORE_DATA;
-
-    // Save the time from the packet header
-    //    vTimeArray2LLInt(psuHeader->aubyRefTime, &(psuMsg->llBaseIntPktTime));
 
     // ------------------------------------
 
@@ -176,21 +165,20 @@ EnI106Status I106_CALL_DECL
 
 // Fill the attributes from TMATS 
 // ToDo: Check if all needed definitions found
+//SPENCE CHECK--this one compiles
+
 EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc, SuAnalogF1_Attributes * psuAnalogF1_Attributes)
 {
 
-    SuRRecord           * psuRRecord;
     uint32_t            uBitCount;
 
     if(psuAnalogF1_Attributes == NULL) return I106_INVALID_PARAMETER; // Set Attributes
 
     memset(psuAnalogF1_Attributes, 0, sizeof(SuAnalogF1_Attributes));
-    psuRRecord = psuRDataSrc->psuRRecord;
-
-    if(psuRRecord == NULL) return I106_INVALID_PARAMETER; // Set Attributes
 
     // Collect the TMATS values
     // ------------------------
+    //NOTE, THESE ARE ALL CSDWs, NOT TMATS INFO
     //What values do we need to process analog data, Spence?
     //      uint32_t    uMode           :  2;      // 
     //      uint32_t    uLength         :  6;      // Bits in A/D value
@@ -202,13 +190,11 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
 
     psuAnalogF1_Attributes->psuRDataSrc                = psuRDataSrc; // May be, we need it in the future
 
-    psuAnalogF1_Attributes->iRecordNum                 = psuRRecord->iRecordNum; // R-x
+    psuAnalogF1_Attributes->iDataSourceNum             = psuRDataSrc->iDataSourceNum; // R-x
 
-    if(psuRDataSrc->szNumDataSources != NULL)
-      
     //Get number of chans per packet
-    if(psuRRDataSrc->szAnalogChansPerPkt != NULL)
-      psuAnalogF1_Attributes->iAnalogChansPerPkt = atoi(psuRRecord->szAnalogChansPerPkt);
+    if(psuRDataSrc->szAnalogChansPerPkt != NULL)
+      psuAnalogF1_Attributes->iAnalogChansPerPkt = atoi(psuRDataSrc->szAnalogChansPerPkt);
 
     //Get sample rate
     if(psuRDataSrc->szAnalogSampleRate != NULL)
@@ -218,15 +204,15 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
     if(psuRDataSrc->szAnalogDataLength != NULL)
        psuAnalogF1_Attributes->ulAnalogDataLength = strtoul(psuRDataSrc->szAnalogDataLength, NULL, 10);
 
-    if(psuRDataSrc->szAnalogMeasTransferOrder != NULL)    // R-x\AMTO-n-m most significant bit "M", least significant bit "L". default: M
+    if(psuRDataSrc->szAnalogMeasTransfOrd != NULL)    // R-x\AMTO-n-m most significant bit "M", least significant bit "L". default: M
     {
         /* Measurement Transfer Order. Which bit is being transferred first is specified as – Most Significant Bit (M), 
         Least Significant Bit (L), or Default (D).
         D-1\MN3-1-1:M;
         */
-        if(psuRDataSrc->szMeasTransferOrder[0] == 'L')
+        if(psuRDataSrc->szAnalogMeasTransfOrd[0] == 'L')
         {
-            psuAnalogF1_Attributes->ulWordTransferOrder = ANALOG_LSB_FIRST;
+            psuAnalogF1_Attributes->ulAnalogMeasTransfOrd = ANALOG_LSB_FIRST;
             return(I106_UNSUPPORTED);
         }
     }
@@ -268,7 +254,33 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
     //"U" = Unsigned binary
     //"F" = IEEE 754 single-precision [IEEE 32] floating point
     if(psuRDataSrc->szAnalogFormat != NULL)
-       psuAnalogF1_Attributes->ulAnalogFormat = psuRDataSrc->szAnalogFormat;
+      switch ( psuRDataSrc->szAnalogFormat[0] )
+      {
+      case '1':
+	psuAnalogF1_Attributes->ulAnalogFormat = ANALOG_FMT_ONES;
+	break;
+      case '2':
+	psuAnalogF1_Attributes->ulAnalogFormat = ANALOG_FMT_TWOS; 
+	break;
+      case '3':
+	psuAnalogF1_Attributes->ulAnalogFormat = ANALOG_FMT_SIGNMAG_0;
+	break;
+      case '4':
+	psuAnalogF1_Attributes->ulAnalogFormat = ANALOG_FMT_SIGNMAG_1;
+	break;
+      case 'B':
+	psuAnalogF1_Attributes->ulAnalogFormat = ANALOG_FMT_OFFSET_BIN;
+	break;
+      case 'U':
+	psuAnalogF1_Attributes->ulAnalogFormat = ANALOG_FMT_UNSIGNED_BIN;
+	break;
+      case 'F':
+	psuAnalogF1_Attributes->ulAnalogFormat = ANALOG_FMT_SINGLE_FLOAT;
+	break;
+      default:
+	return(I106_UNSUPPORTED);
+        break;
+      }
 
     //Get analog input type; 'D' = differential, 'S' = single-ended
     if(psuRDataSrc->szAnalogDifferentialInp != NULL)
@@ -295,91 +307,21 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
     return I106_OK;
 } // End Set_Attributes _AnalogF1
 
-/* /\* ----------------------------------------------------------------------- *\/ */
-/* // Fill the attributes from an external source */
-/* // Replace the correspondent TMATS values, if the argument value is >= 0 */
-/* EnI106Status I106_CALL_DECL  */
-/*     Set_Attributes_Ext_AnalogF1(SuRDataSource * psuRDataSrc, SuAnalogF1_Attributes * psuAnalogF1_Attributes, */
-/*     //      P-x                 P-x\D2               P-x\F1                   P-x\F2 */
-/*     int32_t lRecordNum, int32_t lBitsPerSec, int32_t lCommonWordLen, int32_t lWordTransferOrder, */
-/*     //       P-x\F3               P-x\F4 */
-/*     int32_t lParityType, int32_t lParityTransferOrder, */
-/*     //      P-x\MF\N                 P-x\MF1                     P-x\MF2            P-x\MF3 */
-/*     int32_t lNumMinorFrames, int32_t lWordsInMinorFrame, int32_t lBitsInMinorFrame, int32_t lMinorFrameSyncType, */
-/*     //      P-x\MF4                        P-x\MF5                      P-x\SYNC1  */
-/*     int32_t lMinorFrameSyncPatLen, int64_t llMinorFrameSyncPat, int32_t lMinSyncs,  */
-/*     //      External                      External */
-/*     int64_t llMinorFrameSyncMask, int32_t lNoByteSwap) */
-/* { */
-/*     uint32_t BitCount; */
-/*     if(psuRDataSrc == NULL) return I106_INVALID_PARAMETER; // Set Attributes Ext */
-
-/*     if(psuAnalogF1_Attributes == NULL) return I106_INVALID_PARAMETER; // Set Attributes Ext */
-
-/*     // Transfer the external data */
-/*     if(lRecordNum != -1) */
-/*         psuAnalogF1_Attributes->iRecordNum = lRecordNum; */
-/*     if(lBitsPerSec != -1) */
-/*         psuAnalogF1_Attributes->ulBitsPerSec = lBitsPerSec; */
-/*     if(lCommonWordLen != -1) */
-/*         psuAnalogF1_Attributes->ulCommonWordLen = lCommonWordLen; */
-/*     if(lWordTransferOrder != -1) */
-/*         psuAnalogF1_Attributes->ulWordTransferOrder = lWordTransferOrder; */
-/*     if(lParityType != -1) */
-/*         psuAnalogF1_Attributes->ulParityType = lParityType; */
-/*     if(lParityTransferOrder != -1) */
-/*         psuAnalogF1_Attributes->ulParityTransferOrder = lParityTransferOrder; */
-/*     if(lNumMinorFrames != -1) */
-/*         psuAnalogF1_Attributes->ulNumMinorFrames = lNumMinorFrames; */
-/*     if(lWordsInMinorFrame != -1) */
-/*         psuAnalogF1_Attributes->ulWordsInMinorFrame = lWordsInMinorFrame; */
-/*     if(lBitsInMinorFrame != -1) */
-/*         psuAnalogF1_Attributes->ulBitsInMinorFrame = lBitsInMinorFrame; */
-/*     if(lMinorFrameSyncType != -1) */
-/*         psuAnalogF1_Attributes->ulMinorFrameSyncType = lMinorFrameSyncType; */
-/*     if(lMinorFrameSyncPatLen != -1) */
-/*         psuAnalogF1_Attributes->ulMinorFrameSyncPatLen = lMinorFrameSyncPatLen; */
-/*     if(llMinorFrameSyncPat != -1) */
-/*         psuAnalogF1_Attributes->ullMinorFrameSyncPat = llMinorFrameSyncPat; */
-/*     if(llMinorFrameSyncMask != -1) */
-/*         psuAnalogF1_Attributes->ullMinorFrameSyncMask = llMinorFrameSyncMask; */
-/*     if(lMinSyncs != -1) */
-/*         psuAnalogF1_Attributes->ulMinSyncs = lMinSyncs; */
-/*     if(lNoByteSwap != -1) */
-/*         psuAnalogF1_Attributes->bDontSwapRawData = lNoByteSwap; */
-
-/*     psuAnalogF1_Attributes->ullCommonWordMask = 0; */
-/*     for(BitCount = 0; BitCount < psuAnalogF1_Attributes->ulCommonWordLen; BitCount++) */
-/*     { */
-/*          psuAnalogF1_Attributes->ullCommonWordMask <<= 1; */
-/*          psuAnalogF1_Attributes->ullCommonWordMask |= 1; */
-/*     } */
-
-/*     psuAnalogF1_Attributes->ullCommonWordMask &= psuAnalogF1_Attributes->ullMinorFrameSyncMask; */
-
-/*     psuAnalogF1_Attributes->dDelta100NanoSeconds = d100NANOSECONDS / psuAnalogF1_Attributes->ulBitsPerSec; */
-
-/*     psuAnalogF1_Attributes->bPrepareNextDecodingRun = 1; // Set_Attributes_Ext_AnalogF1 */
-
-/*   return I106_OK; */
-
-/* } // End Set_Attributes_Ext_ AnalogF1 */
-
 /* ----------------------------------------------------------------------- */
 
 // Create the output buffers for a minor frame (data and error flags)
 //SPENCE CHECK--THIS SHOULD WORK FINE
 EnI106Status I106_CALL_DECL 
-    CreateOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes)
+  CreateOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes, uint32_t ulDataLen)
 {
 
-    // Allocate the Analog output buffer for a minor frame
-    psuAttributes->ulOutBufSize = psuAttributes->ulWordsInMinorFrame;
-    psuAttributes->paullOutBuf = (uint64_t *)calloc(sizeof(uint64_t), psuAttributes->ulOutBufSize);
+    // Allocate the Analog output buffer
+    psuAttributes->ulOutBufSize = ulDataLen;
+    psuAttributes->paullOutBuf = (uint64_t *)calloc(sizeof(uint64_t), ulDataLen);
     if(psuAttributes->paullOutBuf == NULL)
         return I106_BUFFER_TOO_SMALL;
     
-    psuAttributes->pauOutBufErr = (uint8_t *)calloc(sizeof(uint8_t), psuAttributes->ulOutBufSize);
+    psuAttributes->pauOutBufErr = (uint8_t *)calloc(sizeof(uint8_t), ulDataLen);
     if(psuAttributes->pauOutBufErr == NULL)
     {
         free(psuAttributes->paullOutBuf); psuAttributes->paullOutBuf = NULL;
@@ -418,21 +360,12 @@ EnI106Status PrepareNextDecodingRun_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
 {
     SuAnalogF1_Attributes * psuAttributes = psuMsg->psuAttributes;
 
-    EnI106Status enStatus = CreateOutputBuffers_AnalogF1(psuAttributes);
+    EnI106Status enStatus = CreateOutputBuffers_AnalogF1(psuAttributes, psuMsg->ulDataLen);
     if(enStatus != I106_OK)
         return(enStatus);
 
     psuAttributes->bPrepareNextDecodingRun = 0;
     
-    // Prepare the variables for bit decoding in throughput mode
-    // --------------------------------------------------------
-    psuAttributes->ullSyncCount = -1; // -1 sets all bits to 1
-    psuAttributes->ullSyncErrors = 0;
-    psuAttributes->ullTestWord = 0; 
-    psuAttributes->ulBitPosition = 0; 
-    psuAttributes->ullBitsLoaded = 0;
-    // Nearly the same as in RenewSyncCounter...
-    psuAttributes->ulDataWordBitCount = 0;
     psuAttributes->lSaveData = 0;
 
     return I106_OK;
@@ -445,9 +378,9 @@ EnI106Status I106_CALL_DECL
     DecodeBuff_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
 {
 
-    SuPcmF1_Attributes * psuAttributes = psuMsg->psuAttributes;
+    SuAnalogF1_Attributes * psuAttributes = psuMsg->psuAttributes;
 
-    while(psuAttributes->ulBitPosition < psuMsg->ulSubPacketBits)
+    while(psuAttributes->ulBitPosition < psuMsg->ulDataLen)
     {
 
         GetNextBit_PcmF1(psuMsg, psuAttributes);

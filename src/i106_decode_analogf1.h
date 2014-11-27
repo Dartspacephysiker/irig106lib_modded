@@ -20,7 +20,7 @@
    * Neither the name Irig106.org nor the names of its contributors may 
      be used to endorse or promote products derived from this software 
      without specific prior written permission.
-
+n
  This software is provided by the copyright holders and contributors 
  "as is" and any express or implied warranties, including, but not 
  limited to, the implied warranties of merchantability and fitness for 
@@ -52,6 +52,7 @@ extern "C" {
  * ----------------------
  */
 
+#define ANALOG_MAX_SUBCHANS 256
 
 typedef enum
 {
@@ -66,6 +67,17 @@ typedef enum
     ANALOG_MSB_FIRST       = 0,
     ANALOG_LSB_FIRST       = 1,
 } ANALOG_BIT_TRANSFER_ORDER;
+
+typedef enum
+{
+  ANALOG_FMT_ONES          = 0,
+  ANALOG_FMT_TWOS          = 1,
+  ANALOG_FMT_SIGNMAG_0     = 2,
+  ANALOG_FMT_SIGNMAG_1     = 3,
+  ANALOG_FMT_OFFSET_BIN    = 4,
+  ANALOG_FMT_UNSIGNED_BIN  = 5,
+  ANALOG_FMT_SINGLE_FLOAT  = 6,
+} ANALOG_FORMAT;   // R-x\AF-n-m
 
 /*
  * Data structures
@@ -106,7 +118,7 @@ typedef PUBLIC struct AnalogF1_ChanSpec_S
 typedef struct AnalogF1_Attributes_S
     {
     SuRDataSource * psuRDataSrc;            // Pointer to the corresponding RDataSource
-    int             iRecordNum;             // R-x
+    int             iDataSourceNum;             // R-x
 
     char          * szDataSourceID;         //
 
@@ -136,8 +148,8 @@ typedef struct AnalogF1_Attributes_S
     /* char          * szAnalogEUCSlope;       // (R-x\AECS-n-m) */
     /* char          * szAnalogEUCOffset;      // (R-x\AECO-n-m) */
     /* char          * szAnalogEUCUnits;       // (R-x\AECU-n-m) */
-    char          * szAnalogFormat;         // (R-x\AF-n-m)
-    char          * szAnalogInputType;      // (R-x\AIT-n-m)
+    uint32_t        ulAnalogFormat;         // (R-x\AF-n-m)
+    uint32_t        bAnalogDifferentialInp;      // (R-x\AIT-n-m)
     uint32_t        bAnalogIsAudio;         // (R-x\AV-n-m)
     uint32_t        ulAnalogAudioFormat;    // (R-x\AVF-n-m)      
       
@@ -152,9 +164,9 @@ typedef struct AnalogF1_Attributes_S
 
     // The output buffer must be allocated if bPrepareNextDecodingRun is notzero
     // The buffer consists of two parts: A data buffer and an error buffer
-    int32_t     ulOutBufSize;               // Size of the output buffer in (64-bit) words
-    uint64_t    * paullOutBuf;              // Contains the decoded data of a minor frame
-    uint8_t     * pauOutBufErr;             // Contains the error flags (parity error) for each data word in a minor frame
+    int32_t     ulOutBufSize;               // Size of the output buffer in bytes
+    uint64_t    * paullOutBuf;              // Contains the data
+    uint8_t     * pauOutBufErr;             // Contains aberrant data
 
     // Variables for bit decoding
     // Must be kept for the whole decoding run because the data 
@@ -188,11 +200,8 @@ typedef struct
       //        SuAnalogF1_IntraPktHeader * psuIntraPktHdr;// Optional intra packet header, consists of the time 
         // suIntraPckTime (like SuIntraPacketTS) and the header itself
         unsigned int        uBytesRead;            // Number of bytes read in this message
-        uint32_t            ulDataLen;             // Overall data packet length
-      //        int64_t             llIntPktTime;          // Intrapacket or header time ! Relative Time !
-      //        int64_t             llBaseIntPktTime;      // Intrapacket or header time ! Relative Time !
-      //        uint32_t            ulSubPacketLen;        // MinorFrameLen in Bytes padded, see bAlignment. 
-        // In throughput mode it's the length of the whole packet
+        uint32_t            ulDataLen;             // Overall data packet length (in bytes)
+
       //        uint32_t            ulSubPacketBits;       // MinorFrameLen in Bits
         uint8_t             * pauData;             // Pointer to the start of the data
         SuTimeRef           suTimeRef;
@@ -219,16 +228,20 @@ EnI106Status I106_CALL_DECL
     enI106_Decode_NextAnalogF1(SuAnalogF1_CurrMsg * psuMsg);
 
 EnI106Status I106_CALL_DECL 
+    DecodeBuff_AnalogF1(SuAnalogF1_CurrMsg * psuMsg);
+
+EnI106Status I106_CALL_DECL 
     Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc, SuAnalogF1_Attributes * psuAttributes);
 
 EnI106Status I106_CALL_DECL 
-    CreateOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes);
+    CreateOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes, uint32_t ulDataLen);
 
 EnI106Status  I106_CALL_DECL
     FreeOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuPcmAttributes);
 
 // Help functions
-
+EnI106Status I106_CALL_DECL
+    SwapShortWords_AnalogF1(uint16_t *puBuffer, long nBytes);
 
 
 #ifdef __cplusplus

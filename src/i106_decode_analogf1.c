@@ -120,15 +120,6 @@ EnI106Status I106_CALL_DECL
     psuMsg->uBytesRead = 0;
     psuMsg->ulDataLen = psuHeader->ulDataLen;
     
-    //Read first CSDW
-    /* uMode     :    */
-    /* uLength   :   Bits in A/D value */
-    /* uSubChan  :   Subchannel number */
-    /* uTotChan  :   Total number of subchannels */
-    /* uFactor   :   Sample rate exponent */
-    /* bSame     :   One/multiple Channel Specific */
-    /* iReserved :   */
-
     //Make sure we're using packed analog data (others unsupported!)
     if(psuMsg->psuChanSpec->uMode != ANALOG_PACKED)
         return I106_UNSUPPORTED;
@@ -143,6 +134,7 @@ EnI106Status I106_CALL_DECL
 
     iSubChanIdx = 0;
 
+    //NOTE: I have not tested situations where bSame is bFALSE!
     if(psuMsg->psuChanSpec->bSame == bFALSE)
     {
       //Allocate memory for all CSDWs
@@ -154,7 +146,8 @@ EnI106Status I106_CALL_DECL
 
 	//Copy CSDW into allocated mem for future reference
 	memcpy(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx], &(psuMsg->psuChanSpec[iSubChanIdx]), sizeof(SuAnalogF1_ChanSpec));
-
+	psuMsg->uBytesRead += sizeof(SuAnalogF1_ChanSpec);
+	
 	//	PrintCSDW_AnalogF1(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx]);
 	
 	iSubChanIdx++;
@@ -166,22 +159,14 @@ EnI106Status I106_CALL_DECL
 
       //Copy CSDW into allocated mem for future reference
       memcpy(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx], &(psuMsg->psuChanSpec[iSubChanIdx]), sizeof(SuAnalogF1_ChanSpec));
+      psuMsg->uBytesRead += sizeof(SuAnalogF1_ChanSpec);
 
       //      PrintCSDW_AnalogF1(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx]);
     }
     
-    psuMsg->uBytesRead += sizeof(SuAnalogF1_ChanSpec) * psuMsg->psuChanSpec->uTotChan;
-
     // Check for no (more) data
     if (psuMsg->ulDataLen <= psuMsg->uBytesRead)
         return I106_NO_MORE_DATA;
-
-    // ------------------------------------
-
-    //This was used to check for remaining data based on subpacket--do we need to do anything
-    //similar?
-    /* if(psuMsg->ulDataLen < psuMsg->uBytesRead + psuMsg->ulSubPacketLen) */
-    /*     return I106_NO_MORE_DATA; */
 
     // Set the pointer to the Analog message data
     psuMsg->pauData = (uint8_t *)((char *)(psuMsg->psuChanSpec) + psuMsg->uBytesRead);
@@ -331,18 +316,6 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
     //Get whether audio
     if(psuRDataSrc->szAnalogIsAudio != NULL)
        psuAnalogF1_Attributes->bAnalogIsAudio = psuRDataSrc->bAnalogIsAudio;
-
-    // Some post processing
-    /* if(psuAnalogF1_Attributes->ulBitsInMinorFrame == 0) */
-    /* { */
-    /*     psuAnalogF1_Attributes->ulBitsInMinorFrame = psuAnalogF1_Attributes->ulCommonWordLen * (psuAnalogF1_Attributes->ulWordsInMinorFrame - 1) + */
-    /*         psuAnalogF1_Attributes->ulMinorFrameSyncPatLen; */
-    /* } */
-    /* for(uBitCount = 0; uBitCount < psuAnalogF1_Attributes->ulCommonWordLen; uBitCount++) */
-    /* { */
-    /*     psuAnalogF1_Attributes->ullCommonWordMask <<= 1; */
-    /*     psuAnalogF1_Attributes->ullCommonWordMask |= 1; */
-    /* } */
         
     psuAnalogF1_Attributes->bPrepareNextDecodingRun = 1; // Set_Attributes_AnalogF1
         

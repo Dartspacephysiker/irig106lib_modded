@@ -38,6 +38,58 @@ n
 
  ****************************************************************************/
 
+/*
+TO DO:
+*Make sure program ends I106_UNSUPPORTED if sample length is other than 8-bit/not divisible by 8
+  
+*For each data packet, write relevant samples to subchan buff
+----measure location using SubChBytesRead, i.e., you are currently at
+    (uint8_t *)pauSubData + SubChBytesRead
+
+*At end of data packet, write "SubChBytesRead" to SubChOutFile, flush SubChBuffer, set BytesRead to zero, continue along
+
+*You'll need some way to keep track of the order of subchannels according to the IRIG-106 Chap10 way of ordering subchannel samples.
+----One way would just be to write samples from a given channel whenever the sample number modded by 2^(sample factor) == 0. 
+
+
+
+//example code
+//Use these arrays to save on time
+int32_t        alSubChanSampFactor[256];
+uint32_t       aulSubChanSampSize[256];
+
+
+//Are all sample sizes an integer factor of 8?
+//if not, return I106_UNSUPPORTED;
+
+//Calculate all factors for each channel
+int iSubChanIdx;
+for ( iSubChanIdx = 0; iSubChanIdx < NumSubChans; iSubChanIdx++ )
+{
+    alSubChanSampFactor[iSubChanIdx] = pow(2,Subchanstructhing[iSubChanIdx]->psuChanSpec->uFactor);
+    aulSubChanSampSize[iSubChanIdx] = Subchanstructhing[iSubChanIdx]->psuChanSpec->uLength;
+}
+
+int32_t iSimulSamp;
+for ( iSimulSamp = 1; iSimulSamp < maxnumsamps; iSimulSamp++ )
+{
+    int iSubChanIdx;
+    for ( iSubChanIdx = 0; iSubChanIdx < NumSubChans; iSubChanIdx++ )
+    {
+        if( iSimulSamp == alSubChanSampFactor[iSubChanIdx])
+        {
+            //write data to sampbuff
+	    Subchanstructhing[iSubChanIdx]->uSubChBytesRead += aulSubChanSampSize[iSubChanIdx];
+        }
+
+    }
+    
+}
+----The way to make sure the samples are correctly ordered is 
+
+ */
+
+
 #ifndef _I106_DECODE_ANALOGF1_H
 #define _I106_DECODE_ANALOGF1_H
 
@@ -88,7 +140,29 @@ typedef enum
 #pragma pack(push,1)
 #endif
 
-// Channel specific data word
+// Subchannel information structure
+// --------------------------------
+  
+typedef struct AnalogF1_SubChan_S
+    {
+        uint32_t               uChanID;        // Overall channel ID
+        uint32_t               uSubChanID;     // Subchannel ID within analog channel
+        SuAnalogF1_ChanSpec  * psuChanSpec;    // CSDW corresponding to subchan
+
+        unsigned int           uSubChBytesRead;     // Number of bytes read for subchan
+        uint8_t              * pauSubData;     // Pointer to the start of the data
+
+        uint32_t               ulDataLen;      // Overall data packet length (in bytes)
+
+        FILE                 * psuSubChOutFile;// Subchannel output file
+      
+#if !defined(__GNUC__)
+    } SuAnalogF1_SubChan;
+#else
+    } __attribute__ ((packed)) SuAnalogF1_SubChan;
+#endif  
+
+// Channel-specific data word
 // --------------------------
 
 typedef PUBLIC struct AnalogF1_ChanSpec_S
@@ -160,15 +234,15 @@ typedef struct AnalogF1_Attributes_S
 
     // Computed values 
 
-    int32_t     bPrepareNextDecodingRun;            // First bit flag for a complete decoding run: preload a minor frame sync word to the test word
+    int32_t         bPrepareNextDecodingRun;            // First bit flag for a complete decoding run: preload a minor frame sync word to the test word
 
-      //The possibility exists for multiple CSDWs and we want to keep a running copy of them
-    SuAnalogF1_ChanSpec ** ppsuChanSpec;
+      //The possibility exists for multiple CSDWs and we want to keep a running copy of them, which we do with a subchannel structure
+   SuAnalogF1_SubChan * psuSubChan[256]; //256 is max number of subchannels
       
     // The output buffer must be allocated if bPrepareNextDecodingRun is notzero
     // The buffer consists of two parts: A data buffer and an error buffer
     int32_t     ulOutBufSize;               // Size of the output buffer in bytes
-    uint8_t    * paullOutBuf;              // Contains the data
+    uint8_t     * paullOutBuf;              // Contains the data
     uint8_t     * pauOutBufErr;             // Contains aberrant data
 
     // Variables for bit decoding
@@ -198,14 +272,12 @@ typedef struct
     {
         SuI106Ch10Header       * psuHeader;        // The overall packet header
         SuAnalogF1_ChanSpec    * psuChanSpec;      // Header(s) in the data stream
-        SuAnalogF1_Attributes  * psuAttributes;    // Pointer to the Pcm Format structure, values must be imported from TMATS 
-                                                   // or another source
-      //        SuAnalogF1_IntraPktHeader * psuIntraPktHdr;// Optional intra packet header, consists of the time 
-        // suIntraPckTime (like SuIntraPacketTS) and the header itself
+        SuAnalogF1_Attributes  * psuAttributes;    // Pointer to analog-channel attributes structure, with most (all?) values imported from TMATS
+
+
         unsigned int        uBytesRead;            // Number of bytes read in this message
         uint32_t            ulDataLen;             // Overall data packet length (in bytes)
 
-      //        uint32_t            ulSubPacketBits;       // MinorFrameLen in Bits
         uint8_t             * pauData;             // Pointer to the start of the data
         SuTimeRef           suTimeRef;
 

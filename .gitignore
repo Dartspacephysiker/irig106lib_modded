@@ -3,3 +3,5 @@
 
 #No object files
 *.o
+#Not library file
+*.a

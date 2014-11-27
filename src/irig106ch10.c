@@ -1274,7 +1274,6 @@ EnI106Status I106_CALL_DECL
     {
     off64_t  llStatus;
     llStatus = lseek64(g_suI106Handle[iHandle].iFile, (off64_t)llOffset, SEEK_SET);
-    printf("llStatus is %i\n",llStatus);
     assert(llStatus >= 0);
     }
 #endif

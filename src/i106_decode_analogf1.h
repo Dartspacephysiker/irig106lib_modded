@@ -162,10 +162,13 @@ typedef struct AnalogF1_Attributes_S
 
     int32_t     bPrepareNextDecodingRun;            // First bit flag for a complete decoding run: preload a minor frame sync word to the test word
 
+      //The possibility exists for multiple CSDWs and we want to keep a running copy of them
+    SuAnalogF1_ChanSpec ** ppsuChanSpec;
+      
     // The output buffer must be allocated if bPrepareNextDecodingRun is notzero
     // The buffer consists of two parts: A data buffer and an error buffer
     int32_t     ulOutBufSize;               // Size of the output buffer in bytes
-    uint64_t    * paullOutBuf;              // Contains the data
+    uint8_t    * paullOutBuf;              // Contains the data
     uint8_t     * pauOutBufErr;             // Contains aberrant data
 
     // Variables for bit decoding
@@ -194,7 +197,7 @@ typedef struct AnalogF1_Attributes_S
 typedef struct
     {
         SuI106Ch10Header       * psuHeader;        // The overall packet header
-        SuAnalogF1_ChanSpec    * psuChanSpec;      // Header in the data stream
+        SuAnalogF1_ChanSpec    * psuChanSpec;      // Header(s) in the data stream
         SuAnalogF1_Attributes  * psuAttributes;    // Pointer to the Pcm Format structure, values must be imported from TMATS 
                                                    // or another source
       //        SuAnalogF1_IntraPktHeader * psuIntraPktHdr;// Optional intra packet header, consists of the time 
@@ -243,6 +246,11 @@ EnI106Status  I106_CALL_DECL
 EnI106Status I106_CALL_DECL
     SwapShortWords_AnalogF1(uint16_t *puBuffer, long nBytes);
 
+EnI106Status I106_CALL_DECL
+    PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec);
+
+EnI106Status I106_CALL_DECL
+   PrintAttributesfromTMATS_ANALOGF1(SuTmatsInfo * psuTmatsinfo);
 
 #ifdef __cplusplus
 } // end namespace

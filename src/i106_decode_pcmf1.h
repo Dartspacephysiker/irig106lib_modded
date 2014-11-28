@@ -282,6 +282,8 @@ EnI106Status I106_CALL_DECL
     SwapBytes_PcmF1(uint8_t *pubBuffer, long nBytes);
 EnI106Status I106_CALL_DECL
     SwapShortWords_PcmF1(uint16_t *puBuffer, long nBytes);
+EnI106Status I106_CALL_DECL
+   PrintAttributesfromTMATS_PcmF1(SuRDataSource * psuRDataSource, SuPcmF1_Attributes *psuAttributes);
 
 #ifdef __cplusplus
 } // end namespcace

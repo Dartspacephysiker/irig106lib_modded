@@ -125,6 +125,7 @@ EnI106Status I106_CALL_DECL
     if(psuAttributes->iAnalogChansPerPkt != psuMsg->psuChanSpec->uTotChan)
         return I106_INVALID_DATA;
 
+    if(bFirst){
     //Based on first CSDWs 'Same' bit, prepare to allocate additional CSDW structs
 
     uTotChan = psuMsg->psuChanSpec->uTotChan;
@@ -200,6 +201,7 @@ EnI106Status I106_CALL_DECL
 	    }
         }
     }
+    }//End if bFirst
 
     // Check for no (more) data
     if (psuMsg->ulDataLen <= psuMsg->ulBytesRead)
@@ -438,7 +440,7 @@ EnI106Status I106_CALL_DECL
     //    asuSubChan = psuMsg->psuAttributes->asuSubChan;
 
     SuAnalogF1_SubChan * psuCurrSubChan;
-    int32_t iSubChanIdx;
+    int32_t iSubChanIdx = 0;
     int32_t iMaxSimulSamps = 0;
 
 
@@ -597,7 +599,7 @@ EnI106Status I106_CALL_DECL PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec)
 
 }
 
- EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_AnalogF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes)
+ EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_AnalogF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes, FILE * psuOutFile)
 {
   
   if( ( psuRDataSource == NULL )  || ( psuAttributes == NULL ) )
@@ -622,9 +624,9 @@ EnI106Status I106_CALL_DECL PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec)
   if(psuRDataSource->szAnalogMeasTransfOrd != NULL)    // R-x\AMTO-n-m most significant bit "M", least significant bit "L". default: M
       printf("Analog Meas Transfer Order\t:\t%c\n",psuRDataSource->szAnalogMeasTransfOrd[0]);
   if(psuRDataSource->szAnalogSampleFactor != NULL)
-      printf("Analog Sample Factor\t\t:\t%" PRIu64 "\n",psuAttributes->ulAnalogSampleFactor);
+      printf("Analog Sample Factor\t\t:\t%" PRIu32 "\n",psuAttributes->ulAnalogSampleFactor);
   if(psuRDataSource->szAnalogSampleFilter != NULL)
-      printf("Analog 3dB Sample Filter\t:\t%" PRIu32 "\tHz\n",psuAttributes->ullAnalogSampleFilter);
+      printf("Analog 3dB Sample Filter\t:\t%" PRIu64 "\tHz\n",psuAttributes->ullAnalogSampleFilter);
   if(psuRDataSource->szAnalogIsDCCoupled != NULL)
       printf("Analog AC/DC Coupling\t\t:\t%cC\n",psuRDataSource->szAnalogIsDCCoupled[0]);
   if(psuRDataSource->szAnalogRecImpedance != NULL)

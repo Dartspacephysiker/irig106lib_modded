@@ -20,7 +20,7 @@
    * Neither the name Irig106.org nor the names of its contributors may 
      be used to endorse or promote products derived from this software 
      without specific prior written permission.
-n
+
  This software is provided by the copyright holders and contributors 
  "as is" and any express or implied warranties, including, but not 
  limited to, the implied warranties of merchantability and fitness for 
@@ -269,7 +269,7 @@ EnI106Status I106_CALL_DECL
     PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec);
 
 EnI106Status I106_CALL_DECL
-    PrintAttributesfromTMATS_AnalogF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes);
+PrintAttributesfromTMATS_AnalogF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes, FILE * psuOutFile);
 
 #ifdef __cplusplus
 } // end namespace

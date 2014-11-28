@@ -345,6 +345,16 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
 
     // Collect the TMATS values
     // ------------------------
+    //What values do we need to process analog data, Spence?
+    //      uint32_t    uMode           :  2;      // 
+    //      uint32_t    uLength         :  6;      // Bits in A/D value
+    //      uint32_t    uSubChan        :  8;      // Subchannel number
+    //      uint32_t    uTotChan        :  8;      // Total number of subchannels
+    //      uint32_t    uFactor         :  4;      // Sample rate exponent
+    //      uint32_t    bSame           :  1;      // One/multiple Channel Specific
+
+
+    // OLD PCM JUNK LEFT HERE FOR REFERENCE
     // Essential values for throughput mode are: 
     //      szBitsPerSec / ulBitsPerSec // P-x\D2
     //      szCommonWordLen / ulCommonWordLen // P-x\F1
@@ -369,7 +379,10 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
 
     psuAnalogF1_Attributes->psuRDataSrc                = psuRDataSrc; // May be, we need it in the future
 
-    psuAnalogF1_Attributes->iRecordNum                 = psuPRecord->iRecordNum; // P-x
+    psuAnalogF1_Attributes->iRecordNum                 = psuRRecord->iRecordNum; // R-x
+
+    if(psuRRecord->sz != NULL)
+        psuAnalogF1_Attributes->
 
     if(psuPRecord->szBitsPerSec != NULL)
         psuAnalogF1_Attributes->ulBitsPerSec           = atol(psuPRecord->szBitsPerSec); // P-x\D2

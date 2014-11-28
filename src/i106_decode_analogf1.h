@@ -51,7 +51,7 @@ TO DO:
 ----One way would just be to write samples from a given channel whenever the sample number modded by 2^(sample factor) == 0. 
 
 
-----The way to make sure the samples are correctly ordered is 
+----The way to make sure the samples are correctly ordered is bubble sort!
 
  */
 
@@ -204,7 +204,7 @@ typedef struct AnalogF1_Attributes_S
     int32_t         bPrepareNextDecodingRun;            // First bit flag for a complete decoding run: preload a minor frame sync word to the test word
 
       //The possibility exists for multiple CSDWs and we want to keep a running copy of them, which we do with a subchannel structure
-    SuAnalogF1_SubChan * psuSubChan[256]; //256 is max number of subchannels
+    SuAnalogF1_SubChan asuSubChan[256]; //256 is max number of subchannels
 
     SuAnalogF1_ChanSpec ** ppsuChanSpec;
       

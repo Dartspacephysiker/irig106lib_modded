@@ -95,14 +95,19 @@ EnI106Status I106_CALL_DECL
     void               * pvBuff,
     SuAnalogF1_CurrMsg * psuMsg)
 {
-    int      iSubChanIdx;
-    uint32_t ulSubPacketLen;
-    uint32_t uRemainder;
 
+    int                     iSubChanIdx;
+    uint32_t                ulSubPacketLen;
+    uint32_t                uRemainder;
+    uint32_t                uTotChan;
+    SuAnalogF1_Attributes * psuAttributes;
+    
     // Check for attributes available
     if(psuMsg->psuAttributes == NULL)
         return I106_INVALID_PARAMETER;
 
+    psuAttributes = psuMsg->psuAttributes;
+    
     // Set pointers to the beginning of the Analog buffer
     psuMsg->psuHeader = psuHeader; 
     psuMsg->psuChanSpec = (SuAnalogF1_ChanSpec *)pvBuff; 
@@ -116,50 +121,69 @@ EnI106Status I106_CALL_DECL
         return I106_UNSUPPORTED;
     
     // Check whether number of subchannels reported by TMATS matches number reported by CSDW
-    if(psuMsg->psuAttributes->iAnalogChansPerPkt != psuMsg->psuChanSpec->uTotChan)
+    if(psuAttributes->iAnalogChansPerPkt != psuMsg->psuChanSpec->uTotChan)
         return I106_INVALID_DATA;
 
     //Based on first CSDWs 'Same' bit, prepare to allocate additional CSDW structs
 
+    uTotChan = psuMsg->psuChanSpec->uTotChan;
     iSubChanIdx = 0;
 
     do
     {
-
         //Allocate memory for _pointers_ to all CSDWs
         //Now allocate memory for all CSDWs
-        psuMsg->psuAttributes->apsuSubChan[iSubChanIdx] = malloc(sizeof(SuAnalogF1_SubChan));
+        psuAttributes->apsuSubChan[iSubChanIdx] = malloc(sizeof(SuAnalogF1_SubChan));
 
-	psuMsg->psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec = malloc(sizeof(SuAnalogF1_ChanSpec));
+	psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec = malloc(sizeof(SuAnalogF1_ChanSpec));
 
         //Copy CSDW into allocated mem for future reference
         //NOTE: I have not tested situations where bSame is bFALSE!
         if(psuMsg->psuChanSpec->bSame == bFALSE)
         {
-     	    memcpy(psuMsg->psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec, &(psuMsg->psuChanSpec[iSubChanIdx]), sizeof(SuAnalogF1_ChanSpec));
+     	    memcpy(psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec, &(psuMsg->psuChanSpec[iSubChanIdx]), sizeof(SuAnalogF1_ChanSpec));
         }
         else
         {
-            psuMsg->psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec = malloc(sizeof(SuAnalogF1_ChanSpec));
+            psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec = malloc(sizeof(SuAnalogF1_ChanSpec));
 	    
             //Copy CSDW into allocated mem for future reference
-	    memcpy(psuMsg->psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec, &(psuMsg->psuChanSpec[0]), sizeof(SuAnalogF1_ChanSpec));
+	    memcpy(psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec, &(psuMsg->psuChanSpec[0]), sizeof(SuAnalogF1_ChanSpec));
 	}
 
 	//update bytes read outside do loop
 	if( psuMsg->psuChanSpec->bSame == bFALSE )
 	{
-	    psuMsg->ulBytesRead += sizeof(SuAnalogF1_ChanSpec) * psuMsg->psuAttributes->iAnalogChansPerPkt;
+	    psuMsg->ulBytesRead += sizeof(SuAnalogF1_ChanSpec) * psuAttributes->iAnalogChansPerPkt;
 	}
 	else
 	{
 	  psuMsg->ulBytesRead += sizeof(SuAnalogF1_ChanSpec);
 	}
-	//	PrintCSDW_AnalogF1(psuMsg->psuAttributes->ppsuChanSpec[iSubChanIdx]);
+	//	PrintCSDW_AnalogF1(psuAttributes->ppsuChanSpec[iSubChanIdx]);
 	
 	iSubChanIdx++;
-    }while ( iSubChanIdx < psuMsg->psuChanSpec->uTotChan );
-    
+    }while ( iSubChanIdx < uTotChan );
+
+    //Bubble sort
+    for (iSubChanIdx = 0 ; iSubChanIdx < uTotChan; iSubChanIdx++)
+    {
+        int32_t              iSubChanIdx2;
+	SuAnalogF1_SubChan * psuSwapSubChan;
+	for ( iSubChanIdx2 = 0 ;  iSubChanIdx2 < uTotChan - iSubChanIdx - 1; iSubChanIdx2++)
+	{
+	    int CurrSubChan = psuAttributes->apsuSubChan[iSubChanIdx2]->psuChanSpec->uSubChan;
+	    int CurrSubChan2 = psuAttributes->apsuSubChan[iSubChanIdx2+1]->psuChanSpec->uSubChan;
+
+	    if (CurrSubChan > CurrSubChan2)
+	    {
+	      	psuSwapSubChan = psuAttributes->apsuSubChan[iSubChanIdx2];
+	      	psuAttributes->apsuSubChan[iSubChanIdx2] = psuAttributes->apsuSubChan[iSubChanIdx2+1];
+		psuAttributes->apsuSubChan[iSubChanIdx2+1] = psuSwapSubChan;
+	    }
+        }
+    }
+
     // Check for no (more) data
     if (psuMsg->ulDataLen <= psuMsg->ulBytesRead)
         return I106_NO_MORE_DATA;
@@ -167,10 +191,11 @@ EnI106Status I106_CALL_DECL
     // Set the pointer to the Analog message data
     psuMsg->pauData = (uint8_t *)((char *)(psuMsg->psuChanSpec) + psuMsg->ulBytesRead);
 
-    // Prepare the Analog buffers and load the first bits
-    if(psuMsg->psuAttributes->bPrepareNextDecodingRun)
-    {
 
+    
+    // Prepare the Analog buffers and load the first bits
+    if(psuAttributes->bPrepareNextDecodingRun)
+    {
         // Set up the data
         EnI106Status enStatus = PrepareNextDecodingRun_AnalogF1(psuMsg);
         if(enStatus != I106_OK)
@@ -178,7 +203,7 @@ EnI106Status I106_CALL_DECL
     }
 
     // Now start the decode of this buffer
-    psuMsg->psuAttributes->ulBitPosition = 0;
+    psuAttributes->ulBitPosition = 0;
 
     return (DecodeBuff_AnalogF1(psuMsg));
 }
@@ -344,20 +369,20 @@ EnI106Status I106_CALL_DECL
 /* ----------------------------------------------------------------------- */
 
 // Free the output buffers
-EnI106Status I106_CALL_DECL FreeOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAnalogAttributes)
+EnI106Status I106_CALL_DECL FreeOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes)
 {
 
-    if(psuAnalogAttributes->paullOutBuf)
+    if(psuAttributes->paullOutBuf)
     {
-        free(psuAnalogAttributes->paullOutBuf);
-        psuAnalogAttributes->paullOutBuf = NULL;
+        free(psuAttributes->paullOutBuf);
+        psuAttributes->paullOutBuf = NULL;
     }
-    if(psuAnalogAttributes->pauOutBufErr)
+    if(psuAttributes->pauOutBufErr)
     {
-        free(psuAnalogAttributes->pauOutBufErr);
-        psuAnalogAttributes->pauOutBufErr = NULL;
+        free(psuAttributes->pauOutBufErr);
+        psuAttributes->pauOutBufErr = NULL;
     }
-    psuAnalogAttributes->bPrepareNextDecodingRun = 1; 
+    psuAttributes->bPrepareNextDecodingRun = 1; 
 
     return(I106_OK);
 } // End FreeOutputBuffers

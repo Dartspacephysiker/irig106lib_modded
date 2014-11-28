@@ -134,7 +134,7 @@ typedef PUBLIC struct AnalogF1_ChanSpec_S
 typedef struct AnalogF1_SubChan_S
     {
         uint32_t               uChanID;        // Overall channel ID
-        uint32_t               uSubChanID;     // Subchannel ID within analog channel
+      //        uint32_t               uSubChanID;     // Subchannel ID within analog channel
         SuAnalogF1_ChanSpec  * psuChanSpec;    // CSDW corresponding to subchan
 
         unsigned int           uSubChBytesRead;// Number of bytes read for subchan
@@ -270,7 +270,7 @@ EnI106Status I106_CALL_DECL
     CreateOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes, uint32_t ulDataLen);
 
 EnI106Status  I106_CALL_DECL
-    FreeOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuPcmAttributes);
+    FreeOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes);
 
 // Help functions
 EnI106Status I106_CALL_DECL

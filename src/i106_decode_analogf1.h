@@ -47,12 +47,6 @@ TO DO:
 
 *At end of data packet, write "SubChBytesRead" to SubChOutFile, flush SubChBuffer, set BytesRead to zero, continue along
 
-*You'll need some way to keep track of the order of subchannels according to the IRIG-106 Chap10 way of ordering subchannel samples.
-----One way would just be to write samples from a given channel whenever the sample number modded by 2^(sample factor) == 0. 
-
-
-----The way to make sure the samples are correctly ordered is bubble sort!
-
  */
 
 
@@ -133,17 +127,16 @@ typedef PUBLIC struct AnalogF1_ChanSpec_S
   
 typedef struct AnalogF1_SubChan_S
     {
-        uint32_t               uChanID;        // Overall channel ID
-      //        uint32_t               uSubChanID;     // Subchannel ID within analog channel
-        SuAnalogF1_ChanSpec  * psuChanSpec;    // CSDW corresponding to subchan
+    uint32_t             uChanID;        // Overall channel ID
 
-        unsigned int           uSubChBytesRead;// Number of bytes read for subchan
-        uint8_t              * pauSubData;     // Pointer to the start of the data
+    SuAnalogF1_ChanSpec *psuChanSpec;    // CSDW corresponding to subchan
 
-        uint32_t               ulDataLen;      // Overall data packet length (in bytes)
+    unsigned int         uSubBytesRead;// Number of bytes read for subchan
+    uint8_t             *pauSubData;     // Pointer to the start of the data
+      //    uint32_t             ulSubDataLen;      // Overall number of subchan bytes in current packet
 
-        char                 * szSubChOutFile; // Subchan output filename
-        FILE                 * psuSubChOutFile;// Subchan output file handle
+    char                 szSubChOutFile[256]; // Subchan output filename
+    FILE                *psuSubChOutFile;// Subchan output file handle
       
 #if !defined(__GNUC__)
     } SuAnalogF1_SubChan;
@@ -152,10 +145,6 @@ typedef struct AnalogF1_SubChan_S
 #endif  
 
 // Channel attributes
-// Note:
-// The SuAnalogF1_Attributes structure covers most of the information needed to decode raw Analog data. 
-// Only a part of the relevant data is supplied in the message SuAnalogF1_ChanSpec.
-// Most of the attributes must be imported from TMATS or supplied by another source.
 typedef struct AnalogF1_Attributes_S
     {
     SuRDataSource * psuRDataSrc;            // Pointer to the corresponding RDataSource
@@ -176,7 +165,7 @@ typedef struct AnalogF1_Attributes_S
     char          * szAnalogMeasurementNam; // (R-x\AMN-n-m)
     uint32_t        ulAnalogDataLength;     // (R-x\ADL-n-m)
     char          * szAnalogBitMask;        // (R-x\AMSK-n-m)
-      //    char          * szAnalogMeasTransfOrd;  // 
+    //    char          * szAnalogMeasTransfOrd;  // 
     uint32_t        ulAnalogMeasTransfOrd;  // Msb (0)/ LSB (1, unsupported) R-x\AMTO-n-m
     uint32_t        ulAnalogSampleFactor;   // (R-x\ASF-n-m)
     uint64_t        ullAnalogSampleFilter;  // (R-x\ASBW-n-m)
@@ -214,7 +203,6 @@ typedef struct AnalogF1_Attributes_S
 
     // Variables for bit decoding
 
-    uint32_t    ulBitPosition;              // Bit position in the current buffer
     int32_t     lSaveData;                  // Save the data (0: do nothing, 1 save, 2: save terminated)
 
 
@@ -225,7 +213,7 @@ typedef struct AnalogF1_Attributes_S
 #endif
 
 
-// Current Analog message (I don't remember when/if I ripped this off PCM stuff)
+// Current Analog message 
 typedef struct
     {
         SuI106Ch10Header       * psuHeader;        // The overall packet header
@@ -254,8 +242,9 @@ typedef struct
 
 EnI106Status I106_CALL_DECL 
     enI106_Decode_FirstAnalogF1(SuI106Ch10Header     * psuHeader,
-                                  void            * pvBuff,
-                                  SuAnalogF1_CurrMsg * psuMsg);
+                                  void             * pvBuff,
+  				  SuAnalogF1_CurrMsg * psuMsg,
+				  int                  bFirst);
 
 EnI106Status I106_CALL_DECL 
     enI106_Decode_NextAnalogF1(SuAnalogF1_CurrMsg * psuMsg);
@@ -280,7 +269,7 @@ EnI106Status I106_CALL_DECL
     PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec);
 
 EnI106Status I106_CALL_DECL
-   PrintAttributesfromTMATS_ANALOGF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes);
+    PrintAttributesfromTMATS_AnalogF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes);
 
 #ifdef __cplusplus
 } // end namespace

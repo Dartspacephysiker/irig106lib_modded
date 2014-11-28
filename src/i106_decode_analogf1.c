@@ -35,7 +35,7 @@
 
  Author: Spencer Hatch, Dartmouth College, Hanover, NH, USA
  *STOLEN* from Hans-Gerhard Flohr's i106_decode_analogf1.c
-2014 NOV Initial Version 1.0
+ 2014 NOV Initial Version 1.0
 
 
  ****************************************************************************/
@@ -87,16 +87,17 @@ namespace Irig106 {
 EnI106Status PrepareNextDecodingRun_AnalogF1(SuAnalogF1_CurrMsg * psuMsg);
 
 /* ======================================================================= */
-
 /* ----------------------------------------------------------------------- */
 
 EnI106Status I106_CALL_DECL 
     enI106_Decode_FirstAnalogF1(SuI106Ch10Header     * psuHeader,
-    void               * pvBuff,
-    SuAnalogF1_CurrMsg * psuMsg)
+				  void               * pvBuff,
+				  SuAnalogF1_CurrMsg * psuMsg,
+				  int                  bFirst)
 {
 
     int                     iSubChanIdx;
+    //    SuAnalogF1_SubChan    * psuCurrSubChan;
     uint32_t                ulSubPacketLen;
     uint32_t                uRemainder;
     uint32_t                uTotChan;
@@ -128,7 +129,7 @@ EnI106Status I106_CALL_DECL
 
     uTotChan = psuMsg->psuChanSpec->uTotChan;
     iSubChanIdx = 0;
-
+    
     do
     {
         //Allocate memory for _pointers_ to all CSDWs
@@ -137,6 +138,22 @@ EnI106Status I106_CALL_DECL
 
 	psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec = malloc(sizeof(SuAnalogF1_ChanSpec));
 
+	//Open and set name of subchan outfile, allocate subchan buffer
+	sprintf(psuAttributes->apsuSubChan[iSubChanIdx]->szSubChOutFile,"%s--Analog_Subchan%i.dmpanalog",psuAttributes->szDataSourceID,iSubChanIdx);
+	printf("Opening subchannel output file %s...\n",psuAttributes->apsuSubChan[iSubChanIdx]->szSubChOutFile);
+
+	if((psuAttributes->apsuSubChan[iSubChanIdx]->psuSubChOutFile = fopen(psuAttributes->apsuSubChan[iSubChanIdx]->szSubChOutFile,"w")) == NULL )
+	{
+	    //NOTE: NEED TO FREE ALL MALLOC'ed MEM IF THINGS GO AWRY
+	    return(I106_OPEN_ERROR);
+	}
+	
+	if((psuAttributes->apsuSubChan[iSubChanIdx]->pauSubData = calloc(1, psuMsg->ulDataLen)) == NULL)
+        {
+	    return(I106_BUFFER_TOO_SMALL);
+	}
+
+	
         //Copy CSDW into allocated mem for future reference
         //NOTE: I have not tested situations where bSame is bFALSE!
         if(psuMsg->psuChanSpec->bSame == bFALSE)
@@ -172,10 +189,10 @@ EnI106Status I106_CALL_DECL
 	SuAnalogF1_SubChan * psuSwapSubChan;
 	for ( iSubChanIdx2 = 0 ;  iSubChanIdx2 < uTotChan - iSubChanIdx - 1; iSubChanIdx2++)
 	{
-	    int CurrSubChan = psuAttributes->apsuSubChan[iSubChanIdx2]->psuChanSpec->uSubChan;
-	    int CurrSubChan2 = psuAttributes->apsuSubChan[iSubChanIdx2+1]->psuChanSpec->uSubChan;
+	    int iCurrSubChan = psuAttributes->apsuSubChan[iSubChanIdx2]->psuChanSpec->uSubChan;
+	    int iCurrSubChan2 = psuAttributes->apsuSubChan[iSubChanIdx2+1]->psuChanSpec->uSubChan;
 
-	    if (CurrSubChan > CurrSubChan2)
+	    if (iCurrSubChan > iCurrSubChan2)
 	    {
 	      	psuSwapSubChan = psuAttributes->apsuSubChan[iSubChanIdx2];
 	      	psuAttributes->apsuSubChan[iSubChanIdx2] = psuAttributes->apsuSubChan[iSubChanIdx2+1];
@@ -190,8 +207,6 @@ EnI106Status I106_CALL_DECL
 
     // Set the pointer to the Analog message data
     psuMsg->pauData = (uint8_t *)((char *)(psuMsg->psuChanSpec) + psuMsg->ulBytesRead);
-
-
     
     // Prepare the Analog buffers and load the first bits
     if(psuAttributes->bPrepareNextDecodingRun)
@@ -203,7 +218,6 @@ EnI106Status I106_CALL_DECL
     }
 
     // Now start the decode of this buffer
-    psuAttributes->ulBitPosition = 0;
 
     return (DecodeBuff_AnalogF1(psuMsg));
 }
@@ -221,8 +235,6 @@ EnI106Status I106_CALL_DECL
 /* ----------------------------------------------------------------------- */
 
 // Fill the attributes from TMATS 
-// ToDo: Check if all needed definitions found
-//SPENCE CHECK--this one compiles
 
 EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc, SuAnalogF1_Attributes * psuAnalogF1_Attributes)
 {
@@ -237,6 +249,8 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
     // ------------------------
 
     psuAnalogF1_Attributes->psuRDataSrc                = psuRDataSrc; // May be, we need it in the future
+
+    psuAnalogF1_Attributes->szDataSourceID             = psuRDataSrc->szDataSourceID;
 
     psuAnalogF1_Attributes->iDataSourceNum             = psuRDataSrc->iDataSourceNum; // R-x
 
@@ -346,7 +360,6 @@ EnI106Status I106_CALL_DECL Set_Attributes_AnalogF1(SuRDataSource * psuRDataSrc,
 /* ----------------------------------------------------------------------- */
 
 // Create the output buffers (data and error flags)
-//SPENCE CHECK--THIS SHOULD WORK FINE
 EnI106Status I106_CALL_DECL 
   CreateOutputBuffers_AnalogF1(SuAnalogF1_Attributes * psuAttributes, uint32_t ulDataLen)
 {
@@ -391,7 +404,6 @@ EnI106Status I106_CALL_DECL FreeOutputBuffers_AnalogF1(SuAnalogF1_Attributes * p
 
 // Prepare a new decoding run 
 // Creates the output buffers and resets values and counters
-//SPENCE CHECK--Might need some edits to remove PCM stuff, but should be OK
 EnI106Status PrepareNextDecodingRun_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
 {
     SuAnalogF1_Attributes * psuAttributes = psuMsg->psuAttributes;
@@ -430,14 +442,13 @@ EnI106Status I106_CALL_DECL
     int32_t iMaxSimulSamps = 0;
 
 
-    //Need to make a distinction between whether subchannels have identical CSDWs or not
-
+    //Need to distinguish between subchannels if not identical
+    //NOTE: I have not tested code where bSame == bFALSE!
     if ( psuMsg->psuChanSpec->bSame == bFALSE ){
     
         //Calculate all factors for each channel (done here for speed)
         //Also get max number of simultaneous samples (See pp 56-57 in IRIG-106 Ch10 June 2013 rev.)
         //Also ensure all sample sizes an integer factor of 8
-        //if not, return I106_UNSUPPORTED;
         for ( iSubChanIdx = 0; iSubChanIdx < ulNumSubChans; iSubChanIdx++ )
         {
             psuCurrSubChan = psuMsg->psuAttributes->apsuSubChan[iSubChanIdx];
@@ -454,7 +465,7 @@ EnI106Status I106_CALL_DECL
         	//Now get sample sizes for each subchannel
             aulSubChanSampSize[iSubChanIdx] = psuCurrSubChan->psuChanSpec->uLength;
         	if ( aulSubChanSampSize[iSubChanIdx] % 8 != 0 )
-                return I106_UNSUPPORTED;
+                    return I106_UNSUPPORTED;
         }
         
         
@@ -474,7 +485,7 @@ EnI106Status I106_CALL_DECL
         		  /*     } */
         		  
         		    psuCurrSubChan = psuMsg->psuAttributes->apsuSubChan[iSubChanIdx];
-        		    psuCurrSubChan->uSubChBytesRead += aulSubChanSampSize[iSubChanIdx];
+        		    psuCurrSubChan->uSubBytesRead += aulSubChanSampSize[iSubChanIdx];
             	    psuMsg->ulBytesRead += aulSubChanSampSize[iSubChanIdx];
                     }
             
@@ -499,24 +510,27 @@ EnI106Status I106_CALL_DECL
             	/*     } */
 	          
 	            psuCurrSubChan = psuMsg->psuAttributes->apsuSubChan[iSubChanIdx];
-		    psuCurrSubChan->uSubChBytesRead += aulSubChanSampSize[iSubChanIdx];
+		    psuCurrSubChan->uSubBytesRead += aulSubChanSampSize[iSubChanIdx];
 		    psuMsg->ulBytesRead += aulSubChanSampSize[iSubChanIdx];
 	        }
 	    }      
 	}
 	else //handle the simplest case--only one subchannel
 	{
-  	    //Code to write all data to sampbuff
-	  if ( ( ( psuMsg->ulDataLen - psuMsg->ulBytesRead ) % ( psuMsg->psuAttributes->apsuSubChan[iSubChanIdx]->psuChanSpec->uLength/8) ) != 0 )
-	  {
+	    psuCurrSubChan = psuMsg->psuAttributes->apsuSubChan[iSubChanIdx];
+	    //Code to write all data to sampbuff
+	    if ( ( ( psuMsg->ulDataLen - psuMsg->ulBytesRead ) % ( psuCurrSubChan->psuChanSpec->uLength/8) ) != 0 )
+	    {
 	    printf("What the!?!? Remaining databuff doesn't allow for clean copy!!!!\n");
 	    return I106_INVALID_DATA;
-	  }
-  	    psuMsg->ulBytesRead = psuMsg->ulDataLen;
+	    }
+	    
+	    int bytesR = fwrite(psuMsg->pauData + psuMsg->ulBytesRead,1, psuMsg->ulDataLen - psuMsg->ulBytesRead,psuCurrSubChan->psuSubChOutFile);
+	    printf("Wrote %i bytes to %s\n",bytesR,psuCurrSubChan->szSubChOutFile);
+	    
+	    psuMsg->ulBytesRead = psuMsg->ulDataLen;
 	}
     }
-    //----The way to make sure the samples are correctly ordered is 
-
   /* while(psuAttributes->ulBitPosition < psuMsg->ulDataLen) */
     /* { */
 
@@ -583,7 +597,7 @@ EnI106Status I106_CALL_DECL PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec)
 
 }
 
- EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_ANALOGF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes)
+ EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_AnalogF1(SuRDataSource * psuRDataSource, SuAnalogF1_Attributes *psuAttributes)
 {
   
   if( ( psuRDataSource == NULL )  || ( psuAttributes == NULL ) )

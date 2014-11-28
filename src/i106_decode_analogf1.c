@@ -129,7 +129,7 @@ EnI106Status I106_CALL_DECL
         return I106_INVALID_DATA;
 
     //Based on first CSDWs 'Same' bit, prepare to allocate additional CSDW structs
-    //Allocate memory for all CSDWs
+    //Allocate memory for _pointers_ to all CSDWs
     psuMsg->psuAttributes->ppsuChanSpec = calloc(sizeof(*(psuMsg->psuAttributes->ppsuChanSpec)), psuMsg->psuChanSpec->uTotChan);
 
     iSubChanIdx = 0;
@@ -137,7 +137,7 @@ EnI106Status I106_CALL_DECL
     //NOTE: I have not tested situations where bSame is bFALSE!
     if(psuMsg->psuChanSpec->bSame == bFALSE)
     {
-      //Allocate memory for all CSDWs
+      //Now allocate memory for all CSDWs
       psuMsg->psuAttributes->ppsuChanSpec = calloc(sizeof(*(psuMsg->psuAttributes->ppsuChanSpec)), psuMsg->psuChanSpec->uTotChan);
 
       do
@@ -393,9 +393,46 @@ EnI106Status I106_CALL_DECL
     DecodeBuff_AnalogF1(SuAnalogF1_CurrMsg * psuMsg)
 {
 
-    SuAnalogF1_Attributes * psuAttributes = psuMsg->psuAttributes;
+    //Use these arrays to save on time
+    SuAnalogF1_Attributes * psuAttributes;
+    AnalogF1_SubChan      * apsuSubChan[ANALOG_MAX_SUBCHANS];
+    int32_t                 alSubChanSampFactor[ANALOG_MAX_SUBCHANS];
+    uint32_t                aulSubChanSampSize[ANALOG_MAX_SUBCHANS];
+    
+    psuAttributes = psuMsg->psuAttributes;
+    apsuSubChan = psuMsg->psuAttributes->apsuSubChan;
+    
+    //Calculate all factors for each channel
+    //Also ensure all sample sizes an integer factor of 8?
+    //if not, return I106_UNSUPPORTED;
+    
+    int iSubChanIdx;
+    for ( iSubChanIdx = 0; iSubChanIdx < NumSubChans; iSubChanIdx++ )
+    {
+        alSubChanSampFactor[iSubChanIdx] = pow(2,apsuSubChan[iSubChanIdx]->psuChanSpec->uFactor);
+        if ( alSubChanSampFactor[iSubChanIdx] % 8 != 0 )
+            return I106_UNSUPPORTED;
+        aulSubChanSampSize[iSubChanIdx] = apsuSubChan[iSubChanIdx]->psuChanSpec->uLength;
+    }
+    
+    int32_t iSimulSamp;
+    for ( iSimulSamp = 1; iSimulSamp < maxnumsamps; iSimulSamp++ )
+    {
+        int iSubChanIdx;
+        for ( iSubChanIdx = 0; iSubChanIdx < NumSubChans; iSubChanIdx++ )
+        {
+            if( iSimulSamp == alSubChanSampFactor[iSubChanIdx])
+            {
+            //write data to sampbuff
+    	    apsuSubChan[iSubChanIdx]->uSubChBytesRead += aulSubChanSampSize[iSubChanIdx];
+            }
+    
+        }
+        
+    }
+    //----The way to make sure the samples are correctly ordered is 
 
-    /* while(psuAttributes->ulBitPosition < psuMsg->ulDataLen) */
+  /* while(psuAttributes->ulBitPosition < psuMsg->ulDataLen) */
     /* { */
 
     /*     // Collect the data */
@@ -475,6 +512,7 @@ EnI106Status I106_CALL_DECL PrintCSDW_AnalogF1(SuAnalogF1_ChanSpec *psuChanSpec)
   //  printf("Data source ID\t\t\t:\t%s\n", psuRDataSource->szDataSourceID);
   printf("Data source number\t\t:\t%i\n",psuRDataSource->iDataSourceNum);
   printf("Channel Data type\t\t:\t%s\n",psuRDataSource->szChannelDataType);
+  printf("Channel Enabled\t\t\t:\t%i\n",psuRDataSource->bEnabled);
   printf("\n");
   if(psuRDataSource->szAnalogChansPerPkt != NULL)
     printf("Analog Channels/Packet\t\t:\t%i\n",psuAttributes->iAnalogChansPerPkt);

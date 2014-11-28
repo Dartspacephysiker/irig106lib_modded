@@ -40,7 +40,6 @@ n
 
 /*
 TO DO:
-*Make sure program ends I106_UNSUPPORTED if sample length is other than 8-bit/not divisible by 8
   
 *For each data packet, write relevant samples to subchan buff
 ----measure location using SubChBytesRead, i.e., you are currently at
@@ -52,39 +51,6 @@ TO DO:
 ----One way would just be to write samples from a given channel whenever the sample number modded by 2^(sample factor) == 0. 
 
 
-
-//example code
-//Use these arrays to save on time
-int32_t        alSubChanSampFactor[256];
-uint32_t       aulSubChanSampSize[256];
-
-
-//Are all sample sizes an integer factor of 8?
-//if not, return I106_UNSUPPORTED;
-
-//Calculate all factors for each channel
-int iSubChanIdx;
-for ( iSubChanIdx = 0; iSubChanIdx < NumSubChans; iSubChanIdx++ )
-{
-    alSubChanSampFactor[iSubChanIdx] = pow(2,Subchanstructhing[iSubChanIdx]->psuChanSpec->uFactor);
-    aulSubChanSampSize[iSubChanIdx] = Subchanstructhing[iSubChanIdx]->psuChanSpec->uLength;
-}
-
-int32_t iSimulSamp;
-for ( iSimulSamp = 1; iSimulSamp < maxnumsamps; iSimulSamp++ )
-{
-    int iSubChanIdx;
-    for ( iSubChanIdx = 0; iSubChanIdx < NumSubChans; iSubChanIdx++ )
-    {
-        if( iSimulSamp == alSubChanSampFactor[iSubChanIdx])
-        {
-            //write data to sampbuff
-	    Subchanstructhing[iSubChanIdx]->uSubChBytesRead += aulSubChanSampSize[iSubChanIdx];
-        }
-
-    }
-    
-}
 ----The way to make sure the samples are correctly ordered is 
 
  */
@@ -140,28 +106,6 @@ typedef enum
 #pragma pack(push,1)
 #endif
 
-// Subchannel information structure
-// --------------------------------
-  
-typedef struct AnalogF1_SubChan_S
-    {
-        uint32_t               uChanID;        // Overall channel ID
-        uint32_t               uSubChanID;     // Subchannel ID within analog channel
-        SuAnalogF1_ChanSpec  * psuChanSpec;    // CSDW corresponding to subchan
-
-        unsigned int           uSubChBytesRead;     // Number of bytes read for subchan
-        uint8_t              * pauSubData;     // Pointer to the start of the data
-
-        uint32_t               ulDataLen;      // Overall data packet length (in bytes)
-
-        FILE                 * psuSubChOutFile;// Subchannel output file
-      
-#if !defined(__GNUC__)
-    } SuAnalogF1_SubChan;
-#else
-    } __attribute__ ((packed)) SuAnalogF1_SubChan;
-#endif  
-
 // Channel-specific data word
 // --------------------------
 
@@ -183,6 +127,29 @@ typedef PUBLIC struct AnalogF1_ChanSpec_S
 #if defined(_MSC_VER)
 #pragma pack(pop)
 #endif
+
+// Subchannel information structure
+// --------------------------------
+  
+typedef struct AnalogF1_SubChan_S
+    {
+        uint32_t               uChanID;        // Overall channel ID
+        uint32_t               uSubChanID;     // Subchannel ID within analog channel
+        SuAnalogF1_ChanSpec  * psuChanSpec;    // CSDW corresponding to subchan
+
+        unsigned int           uSubChBytesRead;// Number of bytes read for subchan
+        uint8_t              * pauSubData;     // Pointer to the start of the data
+
+        uint32_t               ulDataLen;      // Overall data packet length (in bytes)
+
+        char                 * szSubChOutFile; // Subchan output filename
+        FILE                 * psuSubChOutFile;// Subchan output file handle
+      
+#if !defined(__GNUC__)
+    } SuAnalogF1_SubChan;
+#else
+    } __attribute__ ((packed)) SuAnalogF1_SubChan;
+#endif  
 
 // Channel attributes
 // Note:
@@ -237,7 +204,9 @@ typedef struct AnalogF1_Attributes_S
     int32_t         bPrepareNextDecodingRun;            // First bit flag for a complete decoding run: preload a minor frame sync word to the test word
 
       //The possibility exists for multiple CSDWs and we want to keep a running copy of them, which we do with a subchannel structure
-   SuAnalogF1_SubChan * psuSubChan[256]; //256 is max number of subchannels
+    SuAnalogF1_SubChan * psuSubChan[256]; //256 is max number of subchannels
+
+    SuAnalogF1_ChanSpec ** ppsuChanSpec;
       
     // The output buffer must be allocated if bPrepareNextDecodingRun is notzero
     // The buffer consists of two parts: A data buffer and an error buffer

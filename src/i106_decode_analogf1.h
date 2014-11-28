@@ -204,28 +204,17 @@ typedef struct AnalogF1_Attributes_S
     int32_t         bPrepareNextDecodingRun;            // First bit flag for a complete decoding run: preload a minor frame sync word to the test word
 
       //The possibility exists for multiple CSDWs and we want to keep a running copy of them, which we do with a subchannel structure
-    SuAnalogF1_SubChan asuSubChan[256]; //256 is max number of subchannels
+    SuAnalogF1_SubChan * apsuSubChan[256]; //256 is max number of subchannels
 
-    SuAnalogF1_ChanSpec ** ppsuChanSpec;
-      
-    // The output buffer must be allocated if bPrepareNextDecodingRun is notzero
+
     // The buffer consists of two parts: A data buffer and an error buffer
     int32_t     ulOutBufSize;               // Size of the output buffer in bytes
     uint8_t     * paullOutBuf;              // Contains the data
     uint8_t     * pauOutBufErr;             // Contains aberrant data
 
     // Variables for bit decoding
-    // Must be kept for the whole decoding run because the data 
-    // may overlap the CH10 packets (at least in troughput mode)
 
-    uint64_t    ullSyncCount;               // -1: Nothing found, 0: 1 sync found etc. analog to Min Syncs
-    uint64_t    ullSyncErrors;              // Counter for statistics 
-    uint64_t    ullTestWord;                // Currently collected word resp. syncword
-    uint64_t    ullBitsLoaded;              // Bits already loaded (and shifted through) the TestWord. 
-    // The amount must be at least the sync word len to check for a sync word
     uint32_t    ulBitPosition;              // Bit position in the current buffer
-
-    uint32_t    ulDataWordBitCount;         // Counter for the bits of a data word
     int32_t     lSaveData;                  // Save the data (0: do nothing, 1 save, 2: save terminated)
 
 
@@ -244,11 +233,11 @@ typedef struct
         SuAnalogF1_Attributes  * psuAttributes;    // Pointer to analog-channel attributes structure, with most (all?) values imported from TMATS
 
 
-        unsigned int        uBytesRead;            // Number of bytes read in this message
-        uint32_t            ulDataLen;             // Overall data packet length (in bytes)
+        uint32_t                 ulBytesRead;            // Number of bytes read in this message
+        uint32_t                 ulDataLen;             // Overall data packet length (in bytes)
 
-        uint8_t             * pauData;             // Pointer to the start of the data
-        SuTimeRef           suTimeRef;
+        uint8_t                * pauData;             // Pointer to the start of the data
+        SuTimeRef                suTimeRef;
 
 #if !defined(__GNUC__)
     } SuAnalogF1_CurrMsg;

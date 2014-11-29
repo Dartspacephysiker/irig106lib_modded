@@ -257,6 +257,7 @@ typedef PUBLIC struct SuRDataSource_S
     char                      * szAnalogSampleRate;     // (R-1\ASR-n)   //ORIG
     int                         iAnalogSampleRate;   
     char                      * szAnalogIsDataPacked;    // (R-1\ADP-n)   //ORIG
+    int                         bAnalogIsDataPacked;
     char                      * szAnalogMeasurementNam; // (R-x\AMN-n-m)
     char                      * szAnalogDataLength;     // (R-x\ADL-n-m)
     int                         iAnalogDataLength;

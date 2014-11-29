@@ -239,12 +239,11 @@ typedef struct
  * --------------------
  */
 
-
 EnI106Status I106_CALL_DECL 
-    enI106_Decode_FirstAnalogF1(SuI106Ch10Header     * psuHeader,
-                                  void             * pvBuff,
-  				  SuAnalogF1_CurrMsg * psuMsg,
-				  int                  bFirst);
+    enI106_Setup_AnalogF1(SuI106Ch10Header * psuHeader, void * pvBuff, SuAnalogF1_CurrMsg * psuMsg);
+
+  EnI106Status I106_CALL_DECL 
+    enI106_Decode_FirstAnalogF1(SuI106Ch10Header * psuHeader, void * pvBuff, SuAnalogF1_CurrMsg * psuMsg);
 
 EnI106Status I106_CALL_DECL 
     enI106_Decode_NextAnalogF1(SuAnalogF1_CurrMsg * psuMsg);

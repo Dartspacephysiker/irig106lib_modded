@@ -796,7 +796,7 @@ int bDecodeRLine(char * szCodeName, char * szDataItem, SuRRecord ** ppsuFirstRRe
 
     DECODE_R_DS(ATF, szAnalogDataTypeFormat)    // ATF-n - Analog Data Type Format
     DECODE_R_DS_INT(ASR, szAnalogSampleRate, iAnalogSampleRate)          // ASR-n - Analog Sample Rate
-    DECODE_R_DS(ADP, szAnalogIsDataPacked)       // ADP-n - Analog Data Packing Option
+    DECODE_R_DS_BOOL(ADP, szAnalogIsDataPacked, bAnalogIsDataPacked, 'Y')       // ADP-n - Analog Data Packing Option
     DECODE_R_DS(AMN, szAnalogMeasurementNam)    // AMN-n - Analog Measurement Name
     DECODE_R_DS_INT(ADL, szAnalogDataLength, iAnalogDataLength)          // ADL-n - Analog Data Length
     DECODE_R_DS(AMSK, szAnalogBitMask)          // AMSK-n - Analog Bit Mask; "FW" = full word

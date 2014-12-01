@@ -640,7 +640,7 @@ void vConnectG(SuTmatsInfo * psuTmatsInfo)
             } /* end if sscanf OK */                                            \
         else                                                                    \
             assert(bFALSE);                                                     \
-        } /* end if pattern found */
+p        } /* end if pattern found */
 
 // Decode an R Data Source record and convert to a boolean
 #define DECODE_R_DS_BOOL(pattern, field, bfield, truechar)                      \
@@ -1429,7 +1429,7 @@ int bDecodePLine(char * szCodeName, char * szDataItem, SuPRecord ** ppsuFirstPRe
     DECODE_P(D8, szRandomizerLength)  		// D8 - Randomization Length
 
     DECODE_P(TF, szTypeFormat)                  // TF - Type Format
-    DECODE_P(F1, szCommonWordLen)               // F1 - Common World Length
+    DECODE_P(F1, szCommonWordLen)               // F1 - Common Word Length
     DECODE_P(F2, szWordTransferOrder)           // F2 - MSB / LSB first
     DECODE_P(F3, szParityType)                  // F3 - Even, odd, none
     DECODE_P(F4, szParityTransferOrder)         // F4 - Leading / Trailing

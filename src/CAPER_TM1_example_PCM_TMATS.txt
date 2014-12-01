@@ -1,0 +1,56 @@
+#PCM Configuration file for TM1
+
+#COMMENT: (--- PCM-01 ---) Channel 6 PCM - TM1BS1;
+#R-1\TK1-6:6;
+#R-1\DSI-6:TM1BS1;
+#R-1\CHE-6:T;
+#R-1\CDT-6:PCMIN;
+#R-1\PDP-6:TM;
+#R-1\PTF-6:NONE;
+#R-1\TK4-6:5;
+#R-1\CDLN-6:PCM-01;
+#R-1\PDTF-6:1;
+#R-1\ICE-6:0;
+#R-1\IST-6:TTL;
+#R-1\ITH-6:2;
+#R-1\ITM-6:LOW-Z;
+#M-6\ID:TM1BS1;
+#M-6\BB\DLN:PCM-01;
+# Data Link Name
+P-1\DLN:PCM-01;
+# PCM Code
+P-1\D1:NRZ-L;
+# Bit rate (bits per second)
+P-1\D2:9600000;
+# Data is encrypted: (E)ncrypted, (U)nencrypted
+P-1\D3:U;
+# Polarity
+P-1\D4:N;
+# Data Direction
+P-1\D6:N;
+# Data is randomized
+P-1\D7:Y;
+# Randomization length
+P-1\D8:STD;
+# Type format
+P-1\TF:ONE;
+# Common word length
+P-1\F1:16;
+# Word transfer order (MSB / LSB first)
+P-1\F2:M;
+# Parity type (even, odd none)
+P-1\F3:NO;
+# Parity transfer order
+P-1\MF\N:1;
+# Number of word in minor frame
+P-1\MF1:31;
+# Number of bits in minor frame
+P-1\MF2:1200;
+# Minor Frame Sync Type      
+P-1\MF3:FPT;
+# Minor frame sync pattern len
+P-1\MF4:32;
+# Minor frame sync pattern    
+P-1\MF5:11111010111100110011010000000000;
+# Number of subframe ID counters
+P-1\ISF\N:0;

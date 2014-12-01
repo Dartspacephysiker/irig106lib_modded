@@ -494,6 +494,59 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
         strcpy(psuPcmF1_Attributes->field, szDataItem);                                   \
         }
 
+// Read an R record and convert the result to a boolean
+#define READ_P_BOOL(pattern, field, bfield, truechar)                         \
+    else if (strcasecmp(szCodeField, #pattern) == 0)                            \
+        {                                                                       \
+        psuRRec->field = (char *)TmatsMalloc(strlen(szDataItem)+1);           \
+        strcpy(psuRRec->field, szDataItem);                                   \
+        psuRRec->bfield =                                                     \
+            toupper(*szFirstNonWhitespace(szDataItem)) == truechar;             \
+        } /* end if pattern found */
+
+
+// Read an R Data Source record and convert to a boolean
+#define READ_R_DS_BOOL(pattern, field, bfield, truechar)                      \
+    else if (strncasecmp(szCodeField, #pattern"-", strlen(#pattern)+1) == 0)    \
+        {                                                                       \
+        int                 iTokens;                                            \
+        int                 iDSIIndex;                                          \
+        char                szFormat[20];                                       \
+        SuRDataSource     * psuDataSource;                                      \
+        sprintf(szFormat, "%%*%dc-%%i", strlen(#pattern));                      \
+        iTokens = sscanf(szCodeField, szFormat, &iDSIIndex);                    \
+        if (iTokens == 1)                                                       \
+            {                                                                   \
+            psuDataSource = psuGetRDataSource(psuRRec, iDSIIndex, bTRUE);       \
+            assert(psuDataSource != NULL);                                      \
+            psuDataSource->field = (char *)TmatsMalloc(strlen(szDataItem)+1); \
+            strcpy(psuDataSource->field, szDataItem);                         \
+            psuDataSource->bfield =                                           \
+                toupper(*szFirstNonWhitespace(szDataItem)) == truechar;         \
+            } /* end if sscanf OK */                                            \
+        else                                                                    \
+            assert(bFALSE);                                                     \
+        } /* end if pattern found */
+
+// Read an R Data Source record and convert to an int
+#define READ_P_INT(pattern, field, ifield)                                 \
+    else if (strncasecmp(szCodeField, #pattern"-", strlen(#pattern)+1) == 0)    \
+        {                                                                       \
+        int                 iTokens;                                            \
+        int                 iDSIIndex;                                          \
+        char                szFormat[20];                                       \
+        SuRDataSource     * psuDataSource;                                      \
+        sprintf(szFormat, "%%*%dc-%%i", strlen(#pattern));                      \
+        iTokens = sscanf(szCodeField, szFormat, &iDSIIndex);                    \
+        if (iTokens == 1)                                                       \
+            {                                                                   \
+            psuDataSource->field = (char *)TmatsMalloc(strlen(szDataItem)+1); \
+            strcpy(psuDataSource->field, szDataItem);                         \
+            psuPcmF1_Attributes->ifield = atoi(szDataItem);                         \
+            } /* end if sscanf OK */                                            \
+        else                                                                    \
+            assert(bFALSE);                                                     \
+        } /* end if pattern found */
 
 
 EnI106Status I106_CALL_DECL 
@@ -504,7 +557,11 @@ EnI106Status I106_CALL_DECL
     int                 iLineIdx;
     char              * szCodeName;
     char              * szDataItem;
+    char              * szCodeField;
+    int                 iRIdx;
+    int                 iDSIIndex;
     //    int                 iBytesRead;
+    int                 bParseError;
 
     szLine = NULL;
     iLineIdx = 0;
@@ -542,14 +599,29 @@ EnI106Status I106_CALL_DECL
 	if ((szCodeName == NULL) || (szDataItem == NULL) || (szCodeName[0] == "#") )
 	    continue;
 
+	szCodeField = strtok(szCodeName, "\\");
+	assert(szCodeField[0] == 'R');
+	
+	// Get the R record index number
+	iTokens = sscanf(szCodeField, "%*1c-%i", &iRIdx);
+	if (iTokens == 1)
+	{
+            /* psuRRec = psuGetRRecord(ppsuFirstRRecord, iRIdx, bTRUE); */
+	    /* assert(psuRRec != NULL); */
+        }
+	else
+	    return 1;
+
+	szCodeField = strtok(NULL, "\\");
+
 	// Transfer the external data
 	if(bFALSE) {}
 
-	READ_P_(D2, szBitsPerSec)                  // D2 - Bit Rate
-	READ_P(F1, szCommonWordLen)               // F1 - Common World Length
-	READ_P(F2, szWordTransferOrder)           // F2 - MSB / LSB first
-        READ_P(F3, szParityType)                  // F3 - Even, odd, none
-        READ_P(F4, szParityTransferOrder)         // F4 - Leading / Trailing
+	READ_P_INT(D2, szBitsPerSec, ulBitsPerSec)                  // D2 - Bit Rate
+	READ_P_INT(F1, szCommonWordLen, ulCommonWordLen)              // F1 - Common Word Length
+	READ_P_INT(F2, szWordTransferOrder, ulWordTransferOrder)      // F2 - MSB / LSB first
+	READ_P_INT(F3, szParityType, ulParityType)                    // F3 - Even, odd, none
+	READ_P_INT(F4, szParityTransferOrder, ulParityTransferOrder)         // F4 - Leading / Trailing
 	else if (strcasecmp(szCodeField, "MF") == 0)
         {
         szCodeField = strtok(NULL, "\\");

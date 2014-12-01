@@ -157,7 +157,13 @@ typedef struct PcmF1_Attributes_S
     //          szDataLinkName;             // P-x\DLN
     //          szPcmCode;                  // P-x\D1
     uint32_t    ulBitsPerSec;               // P-x\D2 number of bits per seconds
+    //          bIsEncypted                 // P-x\D3
     //          szPolarity                  // P-x\D4
+    //          szAutoCorrectPolarity       // P-x\D5
+    //          szDataDirection             // P-x\D6
+    //          bIsDataRandomized           // P-x\D7
+    //          ulRandomizerLength          // P-x\D8
+
     //          szTypeFormat                // P-x\TF
 
     // Fx
@@ -167,7 +173,7 @@ typedef struct PcmF1_Attributes_S
     uint32_t    ulParityTransferOrder;      // Trailing (0) Leading (1) P-x\F4
 
     // MFx
-    uint32_t    ulNumMinorFrames;           // P-x\MF\N Number of MinorFrames
+    uint32_t    ulNumMinorFrames;           // P-x\MF\N Number of Minor Frames
     uint32_t    ulWordsInMinorFrame;        // P-x\MF1 Words in Minor Frame
     uint32_t    ulBitsInMinorFrame;         // P-x\MF2 Bits in Minor Frame including syncword
     uint32_t    ulMinorFrameSyncType;       // P-x\MF3
@@ -175,10 +181,16 @@ typedef struct PcmF1_Attributes_S
     uint64_t    ullMinorFrameSyncPat;       // P-x\MF5 Wordlen can be up to 64 bits, so let the sync word also 64 bits long
     // SYNCx
     uint32_t    ulMinSyncs;                 // P-x\SYNC1 Minimal number of syncs 0: first sync, 1: second sync etc.;
-    // SYNC2 - SYNC4 not implemented
 
+    // SYNC2 - SYNC5 not implemented
+    uint32_t    ulInSyncErrors;             // P-x\SYNC2 Sync pattern criteria
+    char *      ulOutSyncCrit;              // P-x\SYNC3 Number of allowable disagrees; "NS" = "Not Specified"
+    uint32_t    ulOutSyncErrors;            // P-x\SYNC4 Number of bits that may be in error in sync pattern
+    uint32_t    ulOutSyncFillBits;          // P-x\SYNC5 Number of bits between end and beginning of next frame that can be ignored
+      
     // ISFx, IDCx, SFx not implemented 
-
+    uint32_t    ulNumSFIDCounters;          // P-x\ISF Number of SFID counters defined within minor frame
+      
     // Needed for some strange Pcm sources
     uint32_t    bDontSwapRawData;           // Inhibit byte or word swap on the raw input data
 
@@ -262,6 +274,9 @@ EnI106Status I106_CALL_DECL
     Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, SuPcmF1_Attributes * psuAttributes);
 
 EnI106Status I106_CALL_DECL 
+    Read_Attributes_File_PcmF1(SuRDataSource * psuRDataSrc, SuPcmF1_Attributes * psuPcmF1_Attributes, FILE * psuOutFile, FILE * psuAttributesFile);
+			     
+EnI106Status I106_CALL_DECL 
     Set_Attributes_Ext_PcmF1(SuRDataSource * psuRDataSrc, SuPcmF1_Attributes * psuPcmF1_Attributes,
     int32_t iRecordNum, int32_t lBitsPerSec, int32_t lCommonWordLen, int32_t lWordTransferOrder,
     int32_t lParityType, int32_t lParityTransferOrder,
@@ -283,7 +298,7 @@ EnI106Status I106_CALL_DECL
 EnI106Status I106_CALL_DECL
     SwapShortWords_PcmF1(uint16_t *puBuffer, long nBytes);
 EnI106Status I106_CALL_DECL
-   PrintAttributesfromTMATS_PcmF1(SuRDataSource * psuRDataSource, SuPcmF1_Attributes *psuAttributes);
+PrintAttributesfromTMATS_PcmF1(SuRDataSource * psuRDataSource, SuPcmF1_Attributes *psuAttributes, FILE * psuOutFile);
 
 #ifdef __cplusplus
 } // end namespcace

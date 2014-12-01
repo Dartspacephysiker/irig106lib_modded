@@ -162,7 +162,15 @@ typedef PUBLIC struct SuPRecord_S
     char                      * szDataLinkName;         // P-x\DLN
     char                      * szPcmCode;              // P-x\D1
     char                      * szBitsPerSec;           // P-x\D2
+    char                      * szIsEncrypted;          // P-x\D3
     char                      * szPolarity;             // P-x\D4
+
+    //D5 - D8 not implemented
+    char                      * szAutoCorrectPolarity;  // P-x\D5
+    char                      * szDataDirection;         // P-x\D6  
+    char                      * szIsDataRandomized;      // P-x\D7
+    char                      * szRandomizerLength;      // P-x\D8  
+
     char                      * szTypeFormat;           // P-x\TF
     char                      * szCommonWordLen;        // P-x\F1
     char                      * szWordTransferOrder;    // P-x\F2 most significant bit "M", least significant bit "L". default: M
@@ -175,9 +183,14 @@ typedef PUBLIC struct SuPRecord_S
     char                      * szMinorFrameSyncPatLen; // P-x\MF4
     char                      * szMinorFrameSyncPat;    // P-x\MF5
     char                      * szInSyncCrit;           // P-x\SYNC1
+    //SYNC2 - SYNC5 not implemented
     char                      * szInSyncErrors;         // P-x\SYNC2
     char                      * szOutSyncCrit;          // P-x\SYNC3
     char                      * szOutSyncErrors;        // P-x\SYNC4
+    char                      * szOutSyncFillBits;      // P-x\SYNC5
+      
+    // ISFx, IDCx, SFx not implemented
+    char                      * ulNumSFIDCounters;      // P-x\ISF 
 
     char                      * szNumAsyncEmbedded;     // P-x\AEF\N  <-- ADD THIS ONE
     SuPAsyncEmbedded          * psuFirstAsyncEmbedded;  // Link to embedded stream defs

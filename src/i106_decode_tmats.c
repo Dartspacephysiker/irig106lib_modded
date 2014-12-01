@@ -813,8 +813,8 @@ int bDecodeRLine(char * szCodeName, char * szDataItem, SuRRecord ** ppsuFirstRRe
     DECODE_R_DS(AECO, szAnalogEUCOffset)        // AECO-n - Analog EUC Offset
     DECODE_R_DS(AECU, szAnalogEUCUnits)         // AECU-n - Analog EUC Units
     DECODE_R_DS(AF, szAnalogFormat)             // AF-n - Analog Format
-      DECODE_R_DS_BOOL(AIT, szAnalogDifferentialInp, bAnalogDifferentialInp, 'D')// AIT-n - Analog Input Type
-      DECODE_R_DS_BOOL(AV, szAnalogIsAudio, bAnalogIsAudio, 'Y')         // AV-n - Analog Audio
+    DECODE_R_DS_BOOL(AIT, szAnalogDifferentialInp, bAnalogDifferentialInp, 'D')// AIT-n - Analog Input Type
+    DECODE_R_DS_BOOL(AV, szAnalogIsAudio, bAnalogIsAudio, 'Y')         // AV-n - Analog Audio
     DECODE_R_DS(AVF, szAnalogAudioFormat)       // AVF-n - Analog Audio Format
       
     return 0;
@@ -1421,13 +1421,20 @@ int bDecodePLine(char * szCodeName, char * szDataItem, SuPRecord ** ppsuFirstPRe
     DECODE_P(D1, szPcmCode)                     // D1 - PCM Code
     DECODE_P(D2, szBitsPerSec)                  // D2 - Bit Rate
     DECODE_P(D4, szPolarity)                    // D4 - Polarity
+
+    //D5 - D8 not implemented, but read for TMATS attributes output
+    DECODE_P(D5, szAutoCorrectPolarity)         // D5 - Auto Polarity Correction
+    DECODE_P(D6, szDataDirection)  	        // D6 - Data Direction
+    DECODE_P(D7, szIsDataRandomized)		// D7 - Data Randomization
+    DECODE_P(D8, szRandomizerLength)  		// D8 - Randomization Length
+
     DECODE_P(TF, szTypeFormat)                  // TF - Type Format
     DECODE_P(F1, szCommonWordLen)               // F1 - Common World Length
     DECODE_P(F2, szWordTransferOrder)           // F2 - MSB / LSB first
     DECODE_P(F3, szParityType)                  // F3 - Even, odd, none
     DECODE_P(F4, szParityTransferOrder)         // F4 - Leading / Trailing
 
-    // MF
+      // MF
     else if (strcasecmp(szCodeField, "MF") == 0)
         {
         szCodeField = strtok(NULL, "\\");
@@ -1444,6 +1451,7 @@ int bDecodePLine(char * szCodeName, char * szDataItem, SuPRecord ** ppsuFirstPRe
     DECODE_P(SYNC2, szInSyncErrors)             // SYNC2 - In-sync errors allowed
     DECODE_P(SYNC3, szOutSyncCrit)              // SYNC3 - Out-of-sync criteria
     DECODE_P(SYNC4, szOutSyncErrors)            // SYNC4 - Out-of-sync errors allowed
+    DECODE_P(SYNC5, szOutSyncFillBits)          // SYNC5 - Out-of-sync fill bits
 
     // ISF - Subframe sync
     else if (strcasecmp(szCodeField, "ISF") == 0)

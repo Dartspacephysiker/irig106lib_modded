@@ -484,6 +484,101 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
 } // End Set_Attributes _PcmF1
 
 /* ----------------------------------------------------------------------- */
+// 
+// Replace the correspondent TMATS values, if the argument value is >= 0
+
+ #define READ_P(pattern, field)                                                \
+    else if (strcasecmp(szCodeField, #pattern) == 0)                            \
+        {                                                                       \
+        psuPcmF1_Attributes->field = (char *)TmatsMalloc(strlen(szDataItem)+1);           \
+        strcpy(psuPcmF1_Attributes->field, szDataItem);                                   \
+        }
+
+
+
+EnI106Status I106_CALL_DECL 
+  Read_Attributes_File_PcmF1(SuRDataSource * psuRDataSrc, SuPcmF1_Attributes * psuPcmF1_Attributes, FILE * psuOutFile, FILE * psuAttributesFile)
+{
+
+    char              *  szLine;
+    int                 iLineIdx;
+    char              * szCodeName;
+    char              * szDataItem;
+    //    int                 iBytesRead;
+
+    szLine = NULL;
+    iLineIdx = 0;
+    
+    //Make sure attributes exist
+    if (psuPcmF1_Attributes == NULL)
+    {
+      //    fprintf(stderr,"Invalid !\n");
+      return I106_INVALID_PARAMETER;
+    }
+    
+    //Make sure we can read from the attributes file
+    if (psuOutFile == NULL)
+    {
+      //    fprintf(stderr,"Couldn't read attributes file!\n");
+      return I106_INVALID_HANDLE;
+    }
+  
+    //Make sure we can read from the attributes file
+    if (psuAttributesFile == NULL)
+    {
+      //    fprintf(psuOutFile,"Couldn't read attributes file!\n");
+      return I106_INVALID_HANDLE;
+    }
+  
+    //get line from file
+    while( ( getline(&szLine,NULL,psuAttributesFile) ) != -1 )
+    {
+        // Split the line into left-hand and right-hand sides
+        szCodeName = strtok(szLine, ":");
+	szDataItem = strtok(NULL, ";");
+  
+	// If errors tokenizing the line then skip over them
+	// Also skip comments, which are marked with "#"
+	if ((szCodeName == NULL) || (szDataItem == NULL) || (szCodeName[0] == "#") )
+	    continue;
+
+	// Transfer the external data
+	if(bFALSE) {}
+
+	READ_P_(D2, szBitsPerSec)                  // D2 - Bit Rate
+	READ_P(F1, szCommonWordLen)               // F1 - Common World Length
+	READ_P(F2, szWordTransferOrder)           // F2 - MSB / LSB first
+        READ_P(F3, szParityType)                  // F3 - Even, odd, none
+        READ_P(F4, szParityTransferOrder)         // F4 - Leading / Trailing
+	else if (strcasecmp(szCodeField, "MF") == 0)
+        {
+        szCodeField = strtok(NULL, "\\");
+        if (bFALSE) {}                          // Keep macro logic happy
+        READ_P(N, szNumMinorFrames)           // MF\N - Number of minor frames
+        } // end if MF
+
+	READ_P(MF1, szWordsInMinorFrame)          // MF1 - Number of word in minor frame
+	READ_P(MF2, szBitsInMinorFrame)           // MF2 - Number of bits in minor frame
+        READ_P(MF3, szMinorFrameSyncType)         // MF3 - Minor Frame Sync Type
+	READ_P(MF4, szMinorFrameSyncPatLen)       // MF4 - Minor frame sync pattern length
+        READ_P(MF5, szMinorFrameSyncPat)          // MF5 - Minor frame sync pattern
+	/* if(llMinorFrameSyncMask != -1) */
+	/*   psuPcmF1_Attributes->ullMinorFrameSyncMask = llMinorFrameSyncMask; */
+	/* if(lMinSyncs != -1) */
+	/*   psuPcmF1_Attributes->ulMinSyncs = lMinSyncs; */
+	/* if(lNoByteSwap != -1) */
+	/*   psuPcmF1_Attributes->bDontSwapRawData = lNoByteSwap; */
+
+	
+	iLineIdx++;
+    }
+
+    
+    
+  
+  
+}
+/* ----------------------------------------------------------------------- */
 // Fill the attributes from an external source
 // Replace the correspondent TMATS values, if the argument value is >= 0
 EnI106Status I106_CALL_DECL 
@@ -851,61 +946,73 @@ EnI106Status I106_CALL_DECL SwapShortWords_PcmF1(uint16_t *puBuffer, long nBytes
 #endif
 
 
- EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_PcmF1(SuRDataSource * psuRDataSource, SuPcmF1_Attributes *psuAttributes)
+EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_PcmF1(SuRDataSource * psuRDataSource, SuPcmF1_Attributes *psuAttributes, FILE * psuOutFile)
 {
 
     SuPRecord         * psuPRec;
     
-    if( ( psuRDataSource == NULL )  || ( psuAttributes == NULL ) || ( psuRDataSource->psuPRecord == NULL ) )
+    if( ( psuRDataSource == NULL )  || ( psuAttributes == NULL ) || ( psuRDataSource->psuPRecord == NULL ) || (psuOutFile == NULL ) )
         return I106_INVALID_PARAMETER;
 
     psuPRec = psuRDataSource->psuPRecord;
     
-    printf("\n");
-    printf("========================================\n");  
-    printf("TMATS Attributes, Data Source %s\n", psuRDataSource->szDataSourceID);
-    printf("========================================\n");
-    printf("\n");
-    //  printf("Data source ID\t\t\t:\t%s\n", psuRDataSource->szDataSourceID);
-    printf("Data source number\t\t:\t%i\n",psuRDataSource->iDataSourceNum);
-    printf("Channel Data type\t\t:\t%s\n",psuRDataSource->szChannelDataType);
-    printf("Channel Enabled\t\t\t:\t%i\n",psuRDataSource->bEnabled);
-    printf("\n");
+    fprintf(psuOutFile,"\n");
+    fprintf(psuOutFile,"========================================\n");  
+    fprintf(psuOutFile,"TMATS Attributes, Data Source %s\n", psuRDataSource->szDataSourceID);
+    fprintf(psuOutFile,"========================================\n");
+    fprintf(psuOutFile,"\n");
+    //  fprintf(psuOutFile,"Data source ID\t\t\t:\t%s\n", psuRDataSource->szDataSourceID);
+    fprintf(psuOutFile,"Data source number\t\t:\t%i\n",psuRDataSource->iDataSourceNum);
+    fprintf(psuOutFile,"Channel Data type\t\t:\t%s\n",psuRDataSource->szChannelDataType);
+    fprintf(psuOutFile,"Channel Enabled\t\t\t:\t%i\n",psuRDataSource->bEnabled);
+    fprintf(psuOutFile,"\n");
     if(psuPRec->szDataLinkName != NULL )
-        printf("Data Link Name\t\t\t:\t%s\n", psuPRec->szDataLinkName);
+        fprintf(psuOutFile,"Data Link Name\t\t\t:\t%s\n", psuPRec->szDataLinkName);
     if(psuPRec->szPcmCode != NULL )
-        printf("PCM Code\t\t\t\t:\t%s\n", psuPRec->szPcmCode);
+        fprintf(psuOutFile,"PCM Code\t\t\t:\t%s\n", psuPRec->szPcmCode);
     if(psuPRec->szPolarity != NULL )
-        printf("PCM Polarity\t\t\t:\t%s\n", psuPRec->szPolarity);
+        fprintf(psuOutFile,"PCM Polarity\t\t\t:\t%s\n", psuPRec->szPolarity);
     if(psuPRec->szTypeFormat != NULL )
-        printf("PCM Type Format\t\t\t:\t%s\n", psuPRec->szTypeFormat);
+        fprintf(psuOutFile,"PCM Type Format\t\t\t:\t%s\n", psuPRec->szTypeFormat);
+    if(psuPRec->szBitsPerSec != NULL)
+        fprintf(psuOutFile,"PCM Bits Per Second\t\t:\t%s\n", psuPRec->szBitsPerSec); // P-x\D2
     if(psuPRec->szCommonWordLen != NULL )
-        printf("PCM Common Word Length\t:\t%s\n", psuPRec->szCommonWordLen);
+        fprintf(psuOutFile,"PCM Common Word Length\t\t:\t%s\n", psuPRec->szCommonWordLen);
     if(psuPRec->szWordTransferOrder != NULL )
-        printf("PCM Word Transfer Order\t:\t%s\n", psuPRec->szWordTransferOrder);
+        fprintf(psuOutFile,"PCM Word Transfer Order\t\t:\t%s\n", psuPRec->szWordTransferOrder);
     if(psuPRec->szParityType != NULL )
-        printf("PCM Parity Type\t\t\t:\t%s\n", psuPRec->szParityType);
+        fprintf(psuOutFile,"PCM Parity Type\t\t\t:\t%s\n", psuPRec->szParityType);
     if(psuPRec->szParityTransferOrder != NULL )
-        printf("PCM Parity Transfer Order\t:\t%s\n", psuPRec->szParityTransferOrder);
+        fprintf(psuOutFile,"PCM Parity Transfer Order\t:\t%s\n", psuPRec->szParityTransferOrder);
     if(psuPRec->szNumMinorFrames != NULL )
-        printf("PCM Number of Minor Frames\t:\t%s\n", psuPRec->szNumMinorFrames);
+        fprintf(psuOutFile,"PCM Number of Minor Frames\t:\t%s\n", psuPRec->szNumMinorFrames);
     if(psuPRec->szWordsInMinorFrame != NULL )
-        printf("PCM Words in Minor Frame\t\t:\t%s\n", psuPRec->szWordsInMinorFrame);
+        fprintf(psuOutFile,"PCM Words in Minor Frame\t:\t%s\n", psuPRec->szWordsInMinorFrame);
     if(psuPRec->szBitsInMinorFrame != NULL )
-        printf("PCM Bits in Minor Frame\t\t:\t%s\n", psuPRec->szBitsInMinorFrame);
+        fprintf(psuOutFile,"PCM Bits in Minor Frame\t\t:\t%s\n", psuPRec->szBitsInMinorFrame);
     if(psuPRec->szMinorFrameSyncType != NULL )
-        printf("PCM Minor Frame Sync Type\t:\t%s\n", psuPRec->szMinorFrameSyncType);
+        fprintf(psuOutFile,"PCM Minor Frame Sync Type\t:\t%s\n", psuPRec->szMinorFrameSyncType);
     if(psuPRec->szMinorFrameSyncPat != NULL )
-        printf("PCM Minor Fram Sync Pattern\t\t\t:\t%s\n", psuPRec->szMinorFrameSyncPat);    
+      fprintf(psuOutFile,"PCM Minor Frame Sync Pattern\t:\t%#02X\n", strtol(psuPRec->szMinorFrameSyncPat, NULL, 2));    
     if(psuPRec->szMinorFrameSyncPatLen != NULL )
-        printf("PCM Minor Frame Sync Pat Len\t:\t%s\n", psuPRec->szMinorFrameSyncPatLen);
+        fprintf(psuOutFile,"PCM Minor Frame Sync Pat Len\t:\t%s\n", psuPRec->szMinorFrameSyncPatLen);
     if(psuPRec->szInSyncCrit != NULL )
-        printf("PCM In-Sync Criteria\t\t:\t%s\n", psuPRec->szInSyncCrit);
+        fprintf(psuOutFile,"PCM In-Sync Criteria\t\t:\t%s\n", psuPRec->szInSyncCrit);
     if(psuPRec->szInSyncErrors != NULL )
-        printf("PCM In-Sync Errors Allowed\t:\t%s\n", psuPRec->szInSyncErrors);
+        fprintf(psuOutFile,"PCM In-Sync Errors Allowed\t:\t%s\n", psuPRec->szInSyncErrors);
     if(psuPRec->szOutSyncCrit != NULL )
-        printf("PCM Out-of-Sync Criteria\t\t:\t%s\n", psuPRec->szOutSyncCrit);
+        fprintf(psuOutFile,"PCM Out-of-Sync Criteria\t\t:\t%s\n", psuPRec->szOutSyncCrit);
     if(psuPRec->szOutSyncCrit != NULL )
-        printf("PCM Out-of-Sync Errors Allowed\t:\t%s\n", psuPRec->szOutSyncCrit);  
+        fprintf(psuOutFile,"PCM Out-of-Sync Errors Allowed\t:\t%s\n", psuPRec->szOutSyncCrit);  
+        
+    if(psuAttributes->ulBitsInMinorFrame != 0)
+    {
+        fprintf(psuOutFile,"PCM Bits in Minor Frame\t\t:\t%lu\n", psuAttributes->ulBitsInMinorFrame);  
+    }
+    fprintf(psuOutFile,"PCM Common Word Mask\t\t:\t%#llX\n", psuAttributes->ullCommonWordMask);
+        
+    /* if(psuAttributes->dDelta100NanoSeconds > 0) */
+    /*   fprintf(psuOutFile,""); */
+
     return(I106_OK);
 }

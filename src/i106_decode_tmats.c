@@ -640,7 +640,7 @@ void vConnectG(SuTmatsInfo * psuTmatsInfo)
             } /* end if sscanf OK */                                            \
         else                                                                    \
             assert(bFALSE);                                                     \
-p        } /* end if pattern found */
+        } /* end if pattern found */
 
 // Decode an R Data Source record and convert to a boolean
 #define DECODE_R_DS_BOOL(pattern, field, bfield, truechar)                      \

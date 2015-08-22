@@ -603,6 +603,7 @@ EnI106Status I106_CALL_DECL
 	assert(szCodeField[0] == 'R');
 	
 	// Get the R record index number
+        int                 iTokens;                                            \
 	iTokens = sscanf(szCodeField, "%*1c-%i", &iRIdx);
 	if (iTokens == 1)
 	{
@@ -626,14 +627,22 @@ EnI106Status I106_CALL_DECL
         {
         szCodeField = strtok(NULL, "\\");
         if (bFALSE) {}                          // Keep macro logic happy
-        READ_P(N, szNumMinorFrames)           // MF\N - Number of minor frames
+	//        READ_P(N, szNumMinorFrames)           // MF\N - Number of minor frames
+        READ_P(N, ulNumMinorFrames)           // MF\N - Number of minor frames
         } // end if MF
 
-	READ_P(MF1, szWordsInMinorFrame)          // MF1 - Number of word in minor frame
-	READ_P(MF2, szBitsInMinorFrame)           // MF2 - Number of bits in minor frame
-        READ_P(MF3, szMinorFrameSyncType)         // MF3 - Minor Frame Sync Type
-	READ_P(MF4, szMinorFrameSyncPatLen)       // MF4 - Minor frame sync pattern length
-        READ_P(MF5, szMinorFrameSyncPat)          // MF5 - Minor frame sync pattern
+	/* READ_P(MF1, szWordsInMinorFrame)          // MF1 - Number of word in minor frame */
+	/* READ_P(MF2, szBitsInMinorFrame)           // MF2 - Number of bits in minor frame */
+        /* READ_P(MF3, szMinorFrameSyncType)         // MF3 - Minor Frame Sync Type */
+	/* READ_P(MF4, szMinorFrameSyncPatLen)       // MF4 - Minor frame sync pattern length */
+        /* READ_P(MF5, szMinorFrameSyncPat)          // MF5 - Minor frame sync pattern */
+
+	READ_P(MF1, ulWordsInMinorFrame)          // MF1 - Number of word in minor frame
+	READ_P(MF2, ulBitsInMinorFrame)           // MF2 - Number of bits in minor frame
+        READ_P(MF3, ulMinorFrameSyncType)         // MF3 - Minor Frame Sync Type
+	READ_P(MF4, ulMinorFrameSyncPatLen)       // MF4 - Minor frame sync pattern length
+        READ_P(MF5, ullMinorFrameSyncPat)          // MF5 - Minor frame sync pattern
+
 	/* if(llMinorFrameSyncMask != -1) */
 	/*   psuPcmF1_Attributes->ullMinorFrameSyncMask = llMinorFrameSyncMask; */
 	/* if(lMinSyncs != -1) */

@@ -264,6 +264,13 @@ typedef PUBLIC struct SuRDataSource_S
     char                      * szPcmInputThreshold;    // (R-x\ITH-n)
     char                      * szPcmInputTermination;  // (R-x\ITM-n)
     char                      * szPcmVideoTypeFormat;   // (R-x\PTF-n)
+      //These might be out of order... but they're here! 2015/08/22
+    char                      * szBitsPerSec;
+    char                      * szCommonWordLen;
+    char                      * szWordTransferOrder;
+    char                      * szParityType;
+    char                      * szParityTransferOrder;
+
     // Analog channel attributes
     char                      * szAnalogDataTypeFormat; // (R-x\ATF-n)
     char                      * szAnalogChansPerPkt;    // (R-1\ACH\N-n) //ORIG

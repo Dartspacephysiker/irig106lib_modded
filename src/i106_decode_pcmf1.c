@@ -1051,12 +1051,24 @@ EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_PcmF1(SuRDataSource * psuRD
         fprintf(psuOutFile,"Data Link Name\t\t\t:\t%s\n", psuPRec->szDataLinkName);
     if(psuPRec->szPcmCode != NULL )
         fprintf(psuOutFile,"PCM Code\t\t\t:\t%s\n", psuPRec->szPcmCode);
-    if(psuPRec->szPolarity != NULL )
-        fprintf(psuOutFile,"PCM Polarity\t\t\t:\t%s\n", psuPRec->szPolarity);
-    if(psuPRec->szTypeFormat != NULL )
-        fprintf(psuOutFile,"PCM Type Format\t\t\t:\t%s\n", psuPRec->szTypeFormat);
     if(psuPRec->szBitsPerSec != NULL)
         fprintf(psuOutFile,"PCM Bits Per Second\t\t:\t%s\n", psuPRec->szBitsPerSec); // P-x\D2
+    if(psuPRec->szBitsPerSec != NULL)
+        fprintf(psuOutFile,"Encrypted\t\t\t:\t%s\n", psuPRec->szIsEncrypted); // P-x\D3
+    fprintf(psuOutFile,"\n");
+    if(psuPRec->szPolarity != NULL )
+        fprintf(psuOutFile,"PCM Polarity\t\t\t:\t%s\n", psuPRec->szPolarity);
+    if(psuPRec->szAutoCorrectPolarity != NULL )
+        fprintf(psuOutFile,"Auto Polarity Correction\t:\t%s\n", psuPRec->szAutoCorrectPolarity); // P-x\D5
+    if(psuPRec->szDataDirection != NULL )
+        fprintf(psuOutFile,"Data Direction\t\t\t:\t%s\n", psuPRec->szDataDirection); // P-x\D6
+    if(psuPRec->szIsDataRandomized != NULL )
+        fprintf(psuOutFile,"Data Randomized\t\t\t:\t%s\n", psuPRec->szIsDataRandomized); // P-x\D7
+    if(psuPRec->szRandomizerLength != NULL )
+        fprintf(psuOutFile,"Randomizer Length\t\t:\t%s\n", psuPRec->szRandomizerLength); // P-x\D8
+    fprintf(psuOutFile,"\n");
+    if(psuPRec->szTypeFormat != NULL )
+        fprintf(psuOutFile,"PCM Type Format\t\t\t:\t%s\n", psuPRec->szTypeFormat);
     if(psuPRec->szCommonWordLen != NULL )
         fprintf(psuOutFile,"PCM Common Word Length\t\t:\t%s\n", psuPRec->szCommonWordLen);
     if(psuPRec->szWordTransferOrder != NULL )
@@ -1065,6 +1077,7 @@ EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_PcmF1(SuRDataSource * psuRD
         fprintf(psuOutFile,"PCM Parity Type\t\t\t:\t%s\n", psuPRec->szParityType);
     if(psuPRec->szParityTransferOrder != NULL )
         fprintf(psuOutFile,"PCM Parity Transfer Order\t:\t%s\n", psuPRec->szParityTransferOrder);
+    fprintf(psuOutFile,"\n");
     if(psuPRec->szNumMinorFrames != NULL )
         fprintf(psuOutFile,"PCM Number of Minor Frames\t:\t%s\n", psuPRec->szNumMinorFrames);
     if(psuPRec->szWordsInMinorFrame != NULL )

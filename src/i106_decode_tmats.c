@@ -1420,6 +1420,7 @@ int bDecodePLine(char * szCodeName, char * szDataItem, SuPRecord ** ppsuFirstPRe
     DECODE_P(DLN, szDataLinkName)               // DLN - Data link name
     DECODE_P(D1, szPcmCode)                     // D1 - PCM Code
     DECODE_P(D2, szBitsPerSec)                  // D2 - Bit Rate
+    DECODE_P(D3, szIsEncrypted)                 // D3 - Encrypted
     DECODE_P(D4, szPolarity)                    // D4 - Polarity
 
     //D5 - D8 not implemented, but read for TMATS attributes output

@@ -1044,6 +1044,10 @@ EnI106Status I106_CALL_DECL PrintAttributesfromTMATS_PcmF1(SuRDataSource * psuRD
     fprintf(psuOutFile,"\n");
     //  fprintf(psuOutFile,"Data source ID\t\t\t:\t%s\n", psuRDataSource->szDataSourceID);
     fprintf(psuOutFile,"Data source number\t\t:\t%i\n",psuRDataSource->iDataSourceNum);
+    fprintf(psuOutFile,"Data packing\t\t\t:\t%s\n",psuRDataSource->szPcmDataPacking);
+    fprintf(psuOutFile,"Input clock edge\t\t:\t%s\n",psuRDataSource->szPcmInputClockEdge);
+    fprintf(psuOutFile,"Input signal type\t\t:\t%s\n",psuRDataSource->szPcmInputSignalType);
+    fprintf(psuOutFile,"Input threshold (V)\t\t:\t%s\n",psuRDataSource->szPcmInputThreshold);
     fprintf(psuOutFile,"Channel Data type\t\t:\t%s\n",psuRDataSource->szChannelDataType);
     fprintf(psuOutFile,"Channel Enabled\t\t\t:\t%i\n",psuRDataSource->bEnabled);
     fprintf(psuOutFile,"\n");

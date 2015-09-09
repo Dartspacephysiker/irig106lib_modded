@@ -629,7 +629,7 @@ void vConnectG(SuTmatsInfo * psuTmatsInfo)
         int                 iDSIIndex;                                          \
         char                szFormat[20];                                       \
         SuRDataSource     * psuDataSource;                                      \
-        sprintf(szFormat, "%%*%dc-%%i", strlen(#pattern));                      \
+        sprintf(szFormat, "%%*%zuc-%%i", strlen(#pattern));                      \
         iTokens = sscanf(szCodeField, szFormat, &iDSIIndex);                    \
         if (iTokens == 1)                                                       \
             {                                                                   \
@@ -650,7 +650,7 @@ void vConnectG(SuTmatsInfo * psuTmatsInfo)
         int                 iDSIIndex;                                          \
         char                szFormat[20];                                       \
         SuRDataSource     * psuDataSource;                                      \
-        sprintf(szFormat, "%%*%dc-%%i", strlen(#pattern));                      \
+        sprintf(szFormat, "%%*%zuc-%%i", strlen(#pattern));                      \
         iTokens = sscanf(szCodeField, szFormat, &iDSIIndex);                    \
         if (iTokens == 1)                                                       \
             {                                                                   \
@@ -673,7 +673,7 @@ void vConnectG(SuTmatsInfo * psuTmatsInfo)
         int                 iDSIIndex;                                          \
         char                szFormat[20];                                       \
         SuRDataSource     * psuDataSource;                                      \
-        sprintf(szFormat, "%%*%dc-%%i", strlen(#pattern));                      \
+        sprintf(szFormat, "%%*%zuc-%%i", strlen(#pattern));                      \
         iTokens = sscanf(szCodeField, szFormat, &iDSIIndex);                    \
         if (iTokens == 1)                                                       \
             {                                                                   \
@@ -1328,7 +1328,7 @@ SuBRecord * psuGetBRecord(SuBRecord ** ppsuFirstBRecord, int iRIndex, int bMakeN
         int                 iSFIdx;                                             \
         char                szFormat[20];                                       \
         SuPSubframeId     * psuSubframeId;                                      \
-        sprintf(szFormat, "%%*%dc-%%i", strlen(#pattern));                      \
+        sprintf(szFormat, "%%*%zuc-%%i", strlen(#pattern));                      \
         iTokens = sscanf(szCodeField, szFormat, &iSFIdx);                       \
         if (iTokens == 1)                                                       \
             {                                                                   \
@@ -1349,7 +1349,7 @@ SuBRecord * psuGetBRecord(SuBRecord ** ppsuFirstBRecord, int iRIndex, int bMakeN
         char                szFormat[20];                                           \
         SuPSubframeId     * psuSubframeId;                                          \
         SuPSubframeDef    * psuSubframeDef;                                         \
-        sprintf(szFormat, "%%*%dc-%%i-%%i", strlen(#pattern));                      \
+        sprintf(szFormat, "%%*%zuc-%%i-%%i", strlen(#pattern));                      \
         iTokens = sscanf(szCodeField, szFormat, &iSFIdx, &iCounterIdx);             \
         if (iTokens == 2)                                                           \
             {                                                                       \
@@ -1374,7 +1374,7 @@ SuBRecord * psuGetBRecord(SuBRecord ** ppsuFirstBRecord, int iRIndex, int bMakeN
         SuPSubframeId     * psuSubframeId;                                          \
         SuPSubframeDef    * psuSubframeDef;                                         \
         SuPSubframeLoc    * psuSubframeLoc;                                         \
-        sprintf(szFormat, "%%*%dc-%%i-%%i-%%i", strlen(#pattern));                  \
+        sprintf(szFormat, "%%*%zuc-%%i-%%i-%%i", strlen(#pattern));                  \
         iTokens = sscanf(szCodeField, szFormat, &iSFIdx, &iCounterIdx, &iLocationIdx); \
         if (iTokens == 3)                                                           \
             {                                                                       \

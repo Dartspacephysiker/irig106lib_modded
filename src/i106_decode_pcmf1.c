@@ -66,7 +66,11 @@ namespace Irig106 {
  * Macros and definitions
  * ----------------------
  */
-
+#if 1
+#define TRACE(args) fprintf(stderr,args)
+#else
+#define TRACE(args)
+#endif
 
 /*
  * Data structures
@@ -462,11 +466,18 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
         }
 	//        psuPcmF1_Attributes->ullMinorFrameSyncPat = ullSyncPat;
         psuPcmF1_Attributes->ullMinorFrameSyncPat = ullSyncPat >> 2;
-	printf("I made it!!!!!\n");
-        psuPcmF1_Attributes->ullMinorFrameSyncMask = ullSyncMask;
+        psuPcmF1_Attributes->ullMinorFrameSyncMask = ullSyncMask >> 2;
         if(psuPcmF1_Attributes->ulMinorFrameSyncPatLen == 0)
-            psuPcmF1_Attributes->ulMinorFrameSyncPatLen = ulMinorFrameSyncPatLen-2;
-	//            psuPcmF1_Attributes->ulMinorFrameSyncPatLen = ulMinorFrameSyncPatLen;
+	    psuPcmF1_Attributes->ulMinorFrameSyncPatLen = ulMinorFrameSyncPatLen;
+            psuPcmF1_Attributes->ulMinorFrameSyncPatLen = 30;
+
+	/* printf("Sync pattern: %" PRIX64 "\n",psuPcmF1_Attributes->ullMinorFrameSyncPat); */
+	/* printf("Sync mask   : %" PRIX64 "\n",psuPcmF1_Attributes->ullMinorFrameSyncMask); */
+	/* printf("Sync length : %" PRIX64 "\n",psuPcmF1_Attributes->ullMinorFrameSyncPatLen); */
+	printf("Channel     : %s\n",psuPRecord->szDataLinkName);
+	printf("Sync pattern: %llX\n",psuPcmF1_Attributes->ullMinorFrameSyncPat);
+	printf("Sync mask   : %llX\n",psuPcmF1_Attributes->ullMinorFrameSyncMask);
+	printf("Sync length : %lX\n",psuPcmF1_Attributes->ulMinorFrameSyncPatLen);
     } // minor frame sync pat
         
     // Some post processing
@@ -518,7 +529,7 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
         int                 iDSIIndex;                                          \
         char                szFormat[20];                                       \
         SuRDataSource     * psuDataSource;                                      \
-        sprintf(szFormat, "%%*%dc-%%i", strlen(#pattern));                      \
+        sprintf(szFormat, "%%*%zuc-%%i", strlen(#pattern));                      \
         iTokens = sscanf(szCodeField, szFormat, &iDSIIndex);                    \
         if (iTokens == 1)                                                       \
             {                                                                   \
@@ -541,7 +552,7 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
         int                 iDSIIndex;                                          \
         char                szFormat[20];                                       \
         SuRDataSource     * psuDataSource;                                      \
-        sprintf(szFormat, "%%*%dc-%%i", strlen(#pattern));                      \
+        sprintf(szFormat, "%%*%zuc-%%i", strlen(#pattern));                      \
         iTokens = sscanf(szCodeField, szFormat, &iDSIIndex);                    \
         if (iTokens == 1)                                                       \
             {                                                                   \
@@ -837,8 +848,8 @@ EnI106Status I106_CALL_DECL
 
             psuAttributes->ullSyncCount++;
 
-            //TRACE("Sync word found at BitPos %6d, MFBitCnt %5d, 0x%08X, SyncCnt %6d\n", 
-            //  psuAttributes->ulBitPosition, psuAttributes->ulMinorFrameBitCount, (int32_t)psuAttributes->ullTestWord, psuAttributes->ullSyncCount);
+            fprintf(stderr,"Sync word found at BitPos %6d, MFBitCnt %5d, 0x%08X, SyncCnt %6d\n", 
+		  psuAttributes->ulBitPosition, psuAttributes->ulMinorFrameBitCount, (int32_t)psuAttributes->ullTestWord, psuAttributes->ullSyncCount);
 
             if(psuAttributes->ulMinorFrameBitCount == psuAttributes->ulBitsInMinorFrame)
             {
@@ -852,22 +863,9 @@ EnI106Status I106_CALL_DECL
                 if((psuAttributes->ullSyncCount >= psuAttributes->ulMinSyncs) && (psuAttributes->lSaveData > 1)) 
                 {
 
-		    // Save the 32-bit sync word here
-		    // The arithemetic of MinorFrameWordCount is off because of two things. First, we 
-		    /* int j; */
-		    /* for (j = 0; j < 2 ; j++ ) */
-		    /* 	{ */
-		    /* 	    //			psuAttributes->ulMinorFrameWordCount++; */
-		    /* 	psuAttributes->paullOutBuf[psuAttributes->ulWordsInMinorFrame + j] =(uint16_t) (*(((uint16_t *)&psuAttributes->ullTestWord)+1-j)); */
-		    /* 	} */
-		    /* int j; */
-		    //		    for (j = 0; j < 2 ; j++ )
-		    //		    	{
-		    	    //			psuAttributes->ulMinorFrameWordCount++;
-		    //		    psuAttributes->paullOutBuf[psuAttributes->ulWordsInMinorFrame + j] =(uint16_t) (*(((uint16_t *)&psuAttributes->ullTestWord)));
 		    psuAttributes->paullOutBuf[psuAttributes->ulWordsInMinorFrame - 1] = psuAttributes->ullTestWord & psuAttributes->ullCommonWordMask;
-			//		    	}
 
+		    fprintf(stderr,"Releasing minor frame!\n");
                     // Compute the intrapacket time of the start sync bit position in the current buffer
                     int64_t llBitPosition = (int64_t)psuAttributes->ulBitPosition - (int64_t)psuAttributes->ulBitsInMinorFrame /*- (int64_t)psuAttributes->ulMinorFrameSyncPatLen*/;
 
@@ -916,7 +914,6 @@ EnI106Status I106_CALL_DECL
         if(psuAttributes->ulMinorFrameWordCount >= psuAttributes->ulWordsInMinorFrame)
         {
             psuAttributes->lSaveData = 2;
-
             // Don't release the data here but wait for a trailing sync word. 
         }
     } // end while

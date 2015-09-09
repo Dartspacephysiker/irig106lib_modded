@@ -410,8 +410,10 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
     if(psuPRecord->szNumMinorFrames != NULL)
         psuPcmF1_Attributes->ulNumMinorFrames       = atol(psuPRecord->szNumMinorFrames); // P-x\MF\N
 
+    //    if(psuPRecord->szWordsInMinorFrame != NULL)
+    //        psuPcmF1_Attributes->ulWordsInMinorFrame    = atol(psuPRecord->szWordsInMinorFrame); // P-x\MF1
     if(psuPRecord->szWordsInMinorFrame != NULL)
-        psuPcmF1_Attributes->ulWordsInMinorFrame    = atol(psuPRecord->szWordsInMinorFrame); // P-x\MF1
+        psuPcmF1_Attributes->ulWordsInMinorFrame    = 75; // taking matters into my own hands
 
     if(psuPRecord->szBitsInMinorFrame != NULL)
         psuPcmF1_Attributes->ulBitsInMinorFrame     = atol(psuPRecord->szBitsInMinorFrame); // P-x\MF2
@@ -458,10 +460,13 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
                 ullSyncPat |= 1;
             pChar++;
         }
-        psuPcmF1_Attributes->ullMinorFrameSyncPat = ullSyncPat;
+	//        psuPcmF1_Attributes->ullMinorFrameSyncPat = ullSyncPat;
+        psuPcmF1_Attributes->ullMinorFrameSyncPat = ullSyncPat >> 2;
+	printf("I made it!!!!!\n");
         psuPcmF1_Attributes->ullMinorFrameSyncMask = ullSyncMask;
         if(psuPcmF1_Attributes->ulMinorFrameSyncPatLen == 0)
-            psuPcmF1_Attributes->ulMinorFrameSyncPatLen = ulMinorFrameSyncPatLen;
+            psuPcmF1_Attributes->ulMinorFrameSyncPatLen = ulMinorFrameSyncPatLen-2;
+	//            psuPcmF1_Attributes->ulMinorFrameSyncPatLen = ulMinorFrameSyncPatLen;
     } // minor frame sync pat
         
     // Some post processing
@@ -737,7 +742,8 @@ EnI106Status I106_CALL_DECL
 {
 
     // Allocate the Pcm output buffer for a minor frame
-    psuAttributes->ulOutBufSize = psuAttributes->ulWordsInMinorFrame;
+    //    psuAttributes->ulOutBufSize = psuAttributes->ulWordsInMinorFrame;
+    psuAttributes->ulOutBufSize = psuAttributes->ulWordsInMinorFrame+1;
     psuAttributes->paullOutBuf = (uint64_t *)calloc(sizeof(uint64_t), psuAttributes->ulOutBufSize);
     if(psuAttributes->paullOutBuf == NULL)
         return I106_BUFFER_TOO_SMALL;
@@ -845,6 +851,22 @@ EnI106Status I106_CALL_DECL
                 // i.e. the sync word are used as brackets
                 if((psuAttributes->ullSyncCount >= psuAttributes->ulMinSyncs) && (psuAttributes->lSaveData > 1)) 
                 {
+
+		    // Save the 32-bit sync word here
+		    // The arithemetic of MinorFrameWordCount is off because of two things. First, we 
+		    /* int j; */
+		    /* for (j = 0; j < 2 ; j++ ) */
+		    /* 	{ */
+		    /* 	    //			psuAttributes->ulMinorFrameWordCount++; */
+		    /* 	psuAttributes->paullOutBuf[psuAttributes->ulWordsInMinorFrame + j] =(uint16_t) (*(((uint16_t *)&psuAttributes->ullTestWord)+1-j)); */
+		    /* 	} */
+		    /* int j; */
+		    //		    for (j = 0; j < 2 ; j++ )
+		    //		    	{
+		    	    //			psuAttributes->ulMinorFrameWordCount++;
+		    //		    psuAttributes->paullOutBuf[psuAttributes->ulWordsInMinorFrame + j] =(uint16_t) (*(((uint16_t *)&psuAttributes->ullTestWord)));
+		    psuAttributes->paullOutBuf[psuAttributes->ulWordsInMinorFrame - 1] = psuAttributes->ullTestWord & psuAttributes->ullCommonWordMask;
+			//		    	}
 
                     // Compute the intrapacket time of the start sync bit position in the current buffer
                     int64_t llBitPosition = (int64_t)psuAttributes->ulBitPosition - (int64_t)psuAttributes->ulBitsInMinorFrame /*- (int64_t)psuAttributes->ulMinorFrameSyncPatLen*/;

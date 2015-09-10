@@ -66,11 +66,6 @@ namespace Irig106 {
  * Macros and definitions
  * ----------------------
  */
-#if 1
-#define TRACE(args) fprintf(stderr,args)
-#else
-#define TRACE(args)
-#endif
 
 /*
  * Data structures
@@ -414,10 +409,8 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
     if(psuPRecord->szNumMinorFrames != NULL)
         psuPcmF1_Attributes->ulNumMinorFrames       = atol(psuPRecord->szNumMinorFrames); // P-x\MF\N
 
-    //    if(psuPRecord->szWordsInMinorFrame != NULL)
-    //        psuPcmF1_Attributes->ulWordsInMinorFrame    = atol(psuPRecord->szWordsInMinorFrame); // P-x\MF1
     if(psuPRecord->szWordsInMinorFrame != NULL)
-        psuPcmF1_Attributes->ulWordsInMinorFrame    = 75; // taking matters into my own hands
+	psuPcmF1_Attributes->ulWordsInMinorFrame    = atol(psuPRecord->szWordsInMinorFrame); // P-x\MF1
 
     if(psuPRecord->szBitsInMinorFrame != NULL)
         psuPcmF1_Attributes->ulBitsInMinorFrame     = atol(psuPRecord->szBitsInMinorFrame); // P-x\MF2
@@ -464,20 +457,10 @@ EnI106Status I106_CALL_DECL Set_Attributes_PcmF1(SuRDataSource * psuRDataSrc, Su
                 ullSyncPat |= 1;
             pChar++;
         }
-	//        psuPcmF1_Attributes->ullMinorFrameSyncPat = ullSyncPat;
-        psuPcmF1_Attributes->ullMinorFrameSyncPat = ullSyncPat >> 2;
-        psuPcmF1_Attributes->ullMinorFrameSyncMask = ullSyncMask >> 2;
+	psuPcmF1_Attributes->ullMinorFrameSyncPat = ullSyncPat;
+	psuPcmF1_Attributes->ullMinorFrameSyncMask = ullSyncMask;	
         if(psuPcmF1_Attributes->ulMinorFrameSyncPatLen == 0)
 	    psuPcmF1_Attributes->ulMinorFrameSyncPatLen = ulMinorFrameSyncPatLen;
-            psuPcmF1_Attributes->ulMinorFrameSyncPatLen = 30;
-
-	/* printf("Sync pattern: %" PRIX64 "\n",psuPcmF1_Attributes->ullMinorFrameSyncPat); */
-	/* printf("Sync mask   : %" PRIX64 "\n",psuPcmF1_Attributes->ullMinorFrameSyncMask); */
-	/* printf("Sync length : %" PRIX64 "\n",psuPcmF1_Attributes->ullMinorFrameSyncPatLen); */
-	printf("Channel     : %s\n",psuPRecord->szDataLinkName);
-	printf("Sync pattern: %llX\n",psuPcmF1_Attributes->ullMinorFrameSyncPat);
-	printf("Sync mask   : %llX\n",psuPcmF1_Attributes->ullMinorFrameSyncMask);
-	printf("Sync length : %lX\n",psuPcmF1_Attributes->ulMinorFrameSyncPatLen);
     } // minor frame sync pat
         
     // Some post processing
@@ -848,8 +831,8 @@ EnI106Status I106_CALL_DECL
 
             psuAttributes->ullSyncCount++;
 
-            fprintf(stderr,"Sync word found at BitPos %6d, MFBitCnt %5d, 0x%08X, SyncCnt %6d\n", 
-		  psuAttributes->ulBitPosition, psuAttributes->ulMinorFrameBitCount, (int32_t)psuAttributes->ullTestWord, psuAttributes->ullSyncCount);
+            //fprintf(stderr,"Sync word found at BitPos %6d, MFBitCnt %5d, 0x%08X, SyncCnt %6d\n", 
+	    //	  psuAttributes->ulBitPosition, psuAttributes->ulMinorFrameBitCount, (int32_t)psuAttributes->ullTestWord, psuAttributes->ullSyncCount);
 
             if(psuAttributes->ulMinorFrameBitCount == psuAttributes->ulBitsInMinorFrame)
             {
@@ -865,7 +848,6 @@ EnI106Status I106_CALL_DECL
 
 		    psuAttributes->paullOutBuf[psuAttributes->ulWordsInMinorFrame - 1] = psuAttributes->ullTestWord & psuAttributes->ullCommonWordMask;
 
-		    fprintf(stderr,"Releasing minor frame!\n");
                     // Compute the intrapacket time of the start sync bit position in the current buffer
                     int64_t llBitPosition = (int64_t)psuAttributes->ulBitPosition - (int64_t)psuAttributes->ulBitsInMinorFrame /*- (int64_t)psuAttributes->ulMinorFrameSyncPatLen*/;
 
